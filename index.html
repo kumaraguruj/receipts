@@ -307,14 +307,16 @@
           </div>
 
           <!-- Direct WhatsApp Auto-Trigger Option -->
-          <div class="pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2">
+          <div class="pt-2.5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
             <label class="inline-flex items-center gap-2 cursor-pointer select-none">
               <input type="checkbox" id="auto-whatsapp-toggle" checked
                 class="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer" />
               <span class="text-xs font-medium text-slate-700">Send WhatsApp thank-you automatically on save</span>
             </label>
-            <button type="button" onclick="openWhatsAppConfigModal()" class="text-[11px] font-semibold text-emerald-700 hover:underline cursor-pointer">
-              API Setup &#9881;
+            <button type="button" onclick="openWhatsAppConfigModal()" id="wa-setup-status-btn"
+              class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-[11px] font-semibold text-emerald-800 transition cursor-pointer">
+              <span id="wa-setup-dot" class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+              <span id="wa-setup-label">WhatsApp Setup (Direct App)</span>
             </button>
           </div>
 
@@ -1030,34 +1032,107 @@
   </div>
 
   <!-- WhatsApp Direct Cloud API Settings Modal -->
-  <div id="whatsapp-config-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl border border-slate-200 max-w-md w-full p-5 shadow-xl space-y-4">
+  <div id="whatsapp-config-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl border border-slate-200 max-w-lg w-full p-5 shadow-xl space-y-4 my-auto">
       <div class="flex items-center justify-between pb-3 border-b border-slate-100">
         <div>
-          <h3 class="text-sm font-bold text-slatex-900">Direct WhatsApp Sending Setup</h3>
-          <p class="text-[11px] text-slate-500">Choose Instant Deep-Link or Meta WhatsApp Cloud API</p>
+          <h3 class="font-display font-bold text-base text-slatex-900">WhatsApp Messaging Setup</h3>
+          <p class="text-[11px] text-slate-500">Choose how receipt thank-you messages are sent to donors</p>
         </div>
         <button type="button" onclick="closeWhatsAppConfigModal()" class="text-slate-400 hover:text-slate-700 text-lg font-bold px-2 cursor-pointer">&times;</button>
       </div>
 
       <div class="space-y-3 text-xs">
-        <div class="p-3 rounded-lg bg-emerald-50/70 border border-emerald-200 text-emerald-900">
-          <p class="font-bold">1. Instant Direct Launch (Default &mdash; No API Key Required)</p>
-          <p class="mt-0.5 text-emerald-800">Clicking <strong>WhatsApp</strong> on any receipt with a 10-digit phone number immediately launches the WhatsApp chat with the thank-you message pre-filled.</p>
+        <!-- Delivery Mode Selector -->
+        <div>
+          <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">1. Select Delivery Mode</label>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <button type="button" onclick="selectWhatsAppMode('deeplink')" id="wa-mode-btn-deeplink"
+              class="p-2.5 rounded-xl border text-left transition cursor-pointer bg-emerald-50 border-emerald-500 text-emerald-950">
+              <span class="font-bold block">Direct App</span>
+              <span class="text-[10px] text-emerald-700">Free &middot; Zero setup</span>
+            </button>
+            <button type="button" onclick="selectWhatsAppMode('cloud_api')" id="wa-mode-btn-cloud_api"
+              class="p-2.5 rounded-xl border text-left transition cursor-pointer bg-white border-slate-200 text-slate-700 hover:bg-slate-50">
+              <span class="font-bold block">Meta Cloud API</span>
+              <span class="text-[10px] text-slate-500">Auto-send in background</span>
+            </button>
+            <button type="button" onclick="selectWhatsAppMode('webhook')" id="wa-mode-btn-webhook"
+              class="p-2.5 rounded-xl border text-left transition cursor-pointer bg-white border-slate-200 text-slate-700 hover:bg-slate-50">
+              <span class="font-bold block">Gateway Webhook</span>
+              <span class="text-[10px] text-slate-500">WATI / Ultramsg / Twilio</span>
+            </button>
+          </div>
+          <input type="hidden" id="wa-delivery-mode" value="deeplink" />
         </div>
 
-        <div class="p-3 rounded-lg bg-slate-50 border border-slate-200 space-y-2.5">
-          <p class="font-bold text-slatex-900">2. Background Send via Meta WhatsApp Cloud API (Optional)</p>
-          <p class="text-slate-500">Enter your Meta Cloud API credentials to dispatch messages silently in the background without opening a browser tab.</p>
-          <div>
-            <label for="wa-phone-id" class="block text-[11px] font-semibold text-slate-700 mb-1">Phone Number ID</label>
-            <input type="text" id="wa-phone-id" placeholder="e.g. 104928472910384"
-              class="w-full min-h-[38px] px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-xs text-slatex-900 focus:outline-none focus:border-brand-700 tabular-nums" />
+        <!-- Panel A: Direct WhatsApp App / Web -->
+        <div id="wa-panel-deeplink" class="p-3.5 rounded-xl bg-emerald-50/70 border border-emerald-200 text-emerald-950 space-y-1.5">
+          <p class="font-bold">Direct WhatsApp App / Web Launch (Recommended &amp; Active)</p>
+          <p class="text-emerald-800 leading-relaxed">
+            No API keys or approval needed. Whenever you save a receipt (or click <strong>WhatsApp</strong> on any row), it opens WhatsApp directly to <code class="font-mono">+91 &lt;Donor Mobile&gt;</code> with the thank-you note and Receipt No pre-filled.
+          </p>
+        </div>
+
+        <!-- Panel B: Meta WhatsApp Cloud API -->
+        <div id="wa-panel-cloud_api" class="hidden p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5">
+          <div class="flex items-center justify-between">
+            <p class="font-bold text-slatex-900">Meta WhatsApp Cloud API Credentials</p>
+            <a href="https://developers.facebook.com/apps/" target="_blank" rel="noopener" class="text-[11px] font-semibold text-brand-700 hover:underline">Meta Portal &#8599;</a>
+          </div>
+          <p class="text-[11px] text-slate-500">
+            Get your <strong>Phone Number ID</strong> and <strong>Access Token</strong> from Meta Developers &rarr; WhatsApp &rarr; API Setup.
+          </p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div>
+              <label for="wa-phone-id" class="block text-[11px] font-semibold text-slate-700 mb-1">Phone Number ID *</label>
+              <input type="text" id="wa-phone-id" placeholder="e.g. 104928472910384"
+                class="w-full min-h-[38px] px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-xs text-slatex-900 focus:outline-none focus:border-brand-700 tabular-nums" />
+            </div>
+            <div>
+              <label for="wa-template-name" class="block text-[11px] font-semibold text-slate-700 mb-1">Template Name (Optional)</label>
+              <input type="text" id="wa-template-name" placeholder="Leave blank for text msg"
+                class="w-full min-h-[38px] px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-xs font-mono text-slatex-900 focus:outline-none focus:border-brand-700" />
+            </div>
           </div>
           <div>
-            <label for="wa-access-token" class="block text-[11px] font-semibold text-slate-700 mb-1">Permanent Access Token</label>
+            <label for="wa-access-token" class="block text-[11px] font-semibold text-slate-700 mb-1">Access Token *</label>
             <input type="password" id="wa-access-token" placeholder="EAAG..."
               class="w-full min-h-[38px] px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-xs text-slatex-900 focus:outline-none focus:border-brand-700 font-mono" />
+          </div>
+        </div>
+
+        <!-- Panel C: Third-Party Gateway Webhook -->
+        <div id="wa-panel-webhook" class="hidden p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5">
+          <p class="font-bold text-slatex-900">Custom WhatsApp Gateway / Webhook URL</p>
+          <p class="text-[11px] text-slate-500">
+            Posts JSON <code class="font-mono">{"phone":"91...","message":"...","receiptNo":"...","donorName":"..."}</code> to your endpoint (Ultramsg, WATI, AiSensy, or Make/Zapier).
+          </p>
+          <div>
+            <label for="wa-webhook-url" class="block text-[11px] font-semibold text-slate-700 mb-1">Webhook Endpoint URL *</label>
+            <input type="url" id="wa-webhook-url" placeholder="https://api.ultramsg.com/instance.../messages/chat"
+              class="w-full min-h-[38px] px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-xs font-mono text-slatex-900 focus:outline-none focus:border-brand-700" />
+          </div>
+          <div>
+            <label for="wa-webhook-token" class="block text-[11px] font-semibold text-slate-700 mb-1">API Token / Bearer Header (Optional)</label>
+            <input type="password" id="wa-webhook-token" placeholder="Optional API key or token"
+              class="w-full min-h-[38px] px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-xs font-mono text-slatex-900 focus:outline-none focus:border-brand-700" />
+          </div>
+        </div>
+
+        <!-- Live Test Connection Strip -->
+        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+          <label for="wa-test-phone" class="block text-[11px] font-semibold text-slate-700">
+            Send Test Receipt Message (+91)
+          </label>
+          <div class="flex items-center gap-2">
+            <span class="px-2.5 py-2 rounded-lg bg-white border border-slate-300 text-xs font-mono font-semibold text-slate-600">+91</span>
+            <input type="tel" id="wa-test-phone" maxlength="10" inputmode="numeric" placeholder="Your 10-digit WhatsApp number"
+              class="flex-1 min-h-[38px] px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-xs font-mono text-slatex-900 focus:outline-none focus:border-emerald-600 tabular-nums" />
+            <button type="button" onclick="sendTestWhatsAppMessage()"
+              class="min-h-[38px] px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shrink-0 cursor-pointer">
+              Send Test
+            </button>
           </div>
         </div>
       </div>
@@ -1069,7 +1144,7 @@
         </button>
         <button type="button" onclick="saveWhatsAppConfig()"
           class="min-h-[38px] px-4 py-1.5 rounded-lg bg-brand-800 hover:bg-brand-700 text-white text-xs font-semibold cursor-pointer">
-          Save Settings
+          Save WhatsApp Setup
         </button>
       </div>
     </div>
@@ -1335,6 +1410,7 @@
       bindEvents();
       refreshAll();
       updateGoogleSheetsUIStatus();
+      updateWhatsAppSetupBadge();
     }
 
     function persistReceipts() {
@@ -2219,14 +2295,137 @@
       return `Swamiye Saranam Ayyappa!\nDear ${receipt.donorName},\nThank you for your kind contribution ${giftPart} to Sri Ayyappa Swami Seva Sangam.\nReceipt No: ${rcptRef}`;
     }
 
-    function shareReceiptWhatsApp(serialNo, directLaunchIfPhone = false) {
+    function getWhatsAppConfig() {
+      try {
+        const raw = localStorage.getItem(WA_CONFIG_KEY);
+        const parsed = raw ? JSON.parse(raw) : {};
+        return {
+          mode: parsed.mode || ((parsed.phoneId && parsed.accessToken) ? 'cloud_api' : 'deeplink'),
+          phoneId: parsed.phoneId || '',
+          accessToken: parsed.accessToken || '',
+          templateName: parsed.templateName || '',
+          webhookUrl: parsed.webhookUrl || '',
+          webhookToken: parsed.webhookToken || ''
+        };
+      } catch (e) {
+        return { mode: 'deeplink', phoneId: '', accessToken: '', templateName: '', webhookUrl: '', webhookToken: '' };
+      }
+    }
+
+    function updateWhatsAppSetupBadge() {
+      const cfg = getWhatsAppConfig();
+      const labelEl = document.getElementById('wa-setup-label');
+      if (!labelEl) return;
+      if (cfg.mode === 'cloud_api' && cfg.phoneId && cfg.accessToken) {
+        labelEl.textContent = 'WhatsApp Setup (Cloud API Active)';
+      } else if (cfg.mode === 'webhook' && cfg.webhookUrl) {
+        labelEl.textContent = 'WhatsApp Setup (Gateway Active)';
+      } else {
+        labelEl.textContent = 'WhatsApp Setup (Direct App)';
+      }
+    }
+
+    function selectWhatsAppMode(mode) {
+      document.getElementById('wa-delivery-mode').value = mode;
+      ['deeplink', 'cloud_api', 'webhook'].forEach(m => {
+        const btn = document.getElementById(`wa-mode-btn-${m}`);
+        const panel = document.getElementById(`wa-panel-${m}`);
+        const active = m === mode;
+        if (btn) {
+          btn.className = active
+            ? 'p-2.5 rounded-xl border text-left transition cursor-pointer bg-emerald-50 border-emerald-500 text-emerald-950 shadow-2xs'
+            : 'p-2.5 rounded-xl border text-left transition cursor-pointer bg-white border-slate-200 text-slate-700 hover:bg-slate-50';
+        }
+        if (panel) {
+          panel.classList.toggle('hidden', !active);
+        }
+      });
+    }
+
+    async function dispatchWhatsAppAutomated(phone10, msg, receiptObj = {}) {
+      const cfg = getWhatsAppConfig();
+      if (cfg.mode === 'cloud_api' && cfg.phoneId && cfg.accessToken) {
+        const payload = cfg.templateName
+          ? {
+              messaging_product: 'whatsapp',
+              to: `91${phone10}`,
+              type: 'template',
+              template: {
+                name: cfg.templateName,
+                language: { code: 'en' },
+                components: [
+                  {
+                    type: 'body',
+                    parameters: [
+                      { type: 'text', text: receiptObj.donorName || 'Devotee' },
+                      { type: 'text', text: receiptObj.receiptNo || String(receiptObj.serialNo || '001') }
+                    ]
+                  }
+                ]
+              }
+            }
+          : {
+              messaging_product: 'whatsapp',
+              to: `91${phone10}`,
+              type: 'text',
+              text: { body: msg }
+            };
+
+        const res = await fetch(`https://graph.facebook.com/v19.0/${cfg.phoneId}/messages`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${cfg.accessToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error?.message || `HTTP ${res.status}`);
+        }
+        return true;
+      }
+
+      if (cfg.mode === 'webhook' && cfg.webhookUrl) {
+        const headers = { 'Content-Type': 'application/json' };
+        if (cfg.webhookToken) {
+          headers['Authorization'] = `Bearer ${cfg.webhookToken}`;
+        }
+        const res = await fetch(cfg.webhookUrl, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            phone: `91${phone10}`,
+            message: msg,
+            receiptNo: receiptObj.receiptNo || '',
+            donorName: receiptObj.donorName || ''
+          })
+        });
+        if (!res.ok) throw new Error(`Webhook HTTP ${res.status}`);
+        return true;
+      }
+
+      return false;
+    }
+
+    async function shareReceiptWhatsApp(serialNo, directLaunchIfPhone = false) {
       const target = receipts.find(r => r.serialNo === serialNo);
       if (!target) return;
 
       const msg = buildWhatsAppThanksText(target);
       const phone = (target.phoneNo || '').replace(/\D/g, '').slice(-10);
+      const cfg = getWhatsAppConfig();
 
       if (directLaunchIfPhone && phone.length === 10) {
+        if ((cfg.mode === 'cloud_api' && cfg.phoneId && cfg.accessToken) || (cfg.mode === 'webhook' && cfg.webhookUrl)) {
+          try {
+            await dispatchWhatsAppAutomated(phone, msg, target);
+            showToast(`WhatsApp thank-you sent automatically to +91 ${phone}!`);
+            return;
+          } catch (err) {
+            showToast(`Auto-send failed (${err.message}) — opening WhatsApp directly.`, 'info');
+          }
+        }
         const waUrl = `https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`;
         window.open(waUrl, '_blank', 'noopener');
         return;
@@ -2235,10 +2434,11 @@
       document.getElementById('wa-modal-phone').value = phone;
       document.getElementById('wa-modal-message').value = msg;
 
-      const cfg = getWhatsAppConfig();
       const cloudBtn = document.getElementById('wa-cloud-send-btn');
       if (cloudBtn) {
-        cloudBtn.classList.toggle('hidden', !(cfg.phoneId && cfg.accessToken));
+        const hasAutoAPI = (cfg.mode === 'cloud_api' && cfg.phoneId && cfg.accessToken) || (cfg.mode === 'webhook' && cfg.webhookUrl);
+        cloudBtn.classList.toggle('hidden', !hasAutoAPI);
+        cloudBtn.textContent = cfg.mode === 'webhook' ? 'Send via Gateway' : 'Send Directly (Cloud API)';
       }
 
       document.getElementById('whatsapp-modal').classList.remove('hidden');
@@ -2272,12 +2472,106 @@
       closeWhatsAppModal();
     }
 
-    function getWhatsAppConfig() {
+    function openWhatsAppConfigModal() {
+      const cfg = getWhatsAppConfig();
+      document.getElementById('wa-phone-id').value = cfg.phoneId || '';
+      document.getElementById('wa-access-token').value = cfg.accessToken || '';
+      document.getElementById('wa-template-name').value = cfg.templateName || '';
+      document.getElementById('wa-webhook-url').value = cfg.webhookUrl || '';
+      document.getElementById('wa-webhook-token').value = cfg.webhookToken || '';
+      selectWhatsAppMode(cfg.mode || 'deeplink');
+      document.getElementById('whatsapp-config-modal').classList.remove('hidden');
+    }
+
+    function closeWhatsAppConfigModal() {
+      document.getElementById('whatsapp-config-modal')?.classList.add('hidden');
+    }
+
+    function saveWhatsAppConfig() {
+      const mode = document.getElementById('wa-delivery-mode').value || 'deeplink';
+      const phoneId = document.getElementById('wa-phone-id').value.trim();
+      const accessToken = document.getElementById('wa-access-token').value.trim();
+      const templateName = document.getElementById('wa-template-name').value.trim();
+      const webhookUrl = document.getElementById('wa-webhook-url').value.trim();
+      const webhookToken = document.getElementById('wa-webhook-token').value.trim();
+
+      if (mode === 'cloud_api' && (!phoneId || !accessToken)) {
+        showToast('Enter both Phone Number ID and Access Token for Meta Cloud API.', 'error');
+        return;
+      }
+      if (mode === 'webhook' && !webhookUrl) {
+        showToast('Enter a valid Webhook Endpoint URL.', 'error');
+        return;
+      }
+
       try {
-        const raw = localStorage.getItem(WA_CONFIG_KEY);
-        return raw ? JSON.parse(raw) : { phoneId: '', accessToken: '' };
-      } catch (e) {
-        return { phoneId: '', accessToken: '' };
+        localStorage.setItem(WA_CONFIG_KEY, JSON.stringify({
+          mode,
+          phoneId,
+          accessToken,
+          templateName,
+          webhookUrl,
+          webhookToken
+        }));
+      } catch (e) {}
+
+      updateWhatsAppSetupBadge();
+      closeWhatsAppConfigModal();
+      showToast('WhatsApp messaging setup saved!');
+    }
+
+    async function sendTestWhatsAppMessage() {
+      const phone = document.getElementById('wa-test-phone').value.replace(/\D/g, '').slice(-10);
+      if (phone.length !== 10) {
+        showToast('Enter a valid 10-digit mobile number to test.', 'error');
+        document.getElementById('wa-test-phone').focus();
+        return;
+      }
+
+      const mode = document.getElementById('wa-delivery-mode').value || 'deeplink';
+      const testSample = {
+        serialNo: 1,
+        receiptNo: 'TEST-001',
+        donorName: 'Test Devotee',
+        amount: 500,
+        mode: 'Cash',
+        materials: []
+      };
+      const testMsg = buildWhatsAppThanksText(testSample);
+
+      if (mode === 'deeplink') {
+        window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(testMsg)}`, '_blank', 'noopener');
+        showToast(`Opened WhatsApp test chat for +91 ${phone}!`);
+        return;
+      }
+
+      saveWhatsAppConfig();
+      try {
+        await dispatchWhatsAppAutomated(phone, testMsg, testSample);
+        showToast(`Test WhatsApp message delivered to +91 ${phone}!`);
+      } catch (err) {
+        showToast(`Test send failed: ${err.message}`, 'error');
+      }
+    }
+
+    async function sendViaCloudAPI() {
+      const cfg = getWhatsAppConfig();
+      const phone = document.getElementById('wa-modal-phone').value.replace(/\D/g, '').slice(-10);
+      const msg = document.getElementById('wa-modal-message').value;
+      if (cfg.mode === 'deeplink') {
+        openWhatsAppConfigModal();
+        return;
+      }
+      if (phone.length !== 10) {
+        showToast('Enter a valid 10-digit mobile number for automated send.', 'error');
+        return;
+      }
+      try {
+        await dispatchWhatsAppAutomated(phone, msg, {});
+        closeWhatsAppModal();
+        showToast(`Sent WhatsApp message to +91 ${phone}!`);
+      } catch (err) {
+        showToast(`Send Error: ${err.message}`, 'error');
       }
     }
 
@@ -3427,7 +3721,9 @@
       launchWhatsAppFromModal,
       openWhatsAppConfigModal,
       closeWhatsAppConfigModal,
-      saveWhatsAppConfig
+      selectWhatsAppMode,
+      saveWhatsAppConfig,
+      sendTestWhatsAppMessage
     });
 
     if (document.readyState === 'loading') {
