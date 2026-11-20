@@ -1089,19 +1089,29 @@
             <p class="font-bold text-slatex-900">Meta WhatsApp Cloud API Credentials</p>
             <a href="https://developers.facebook.com/apps/" target="_blank" rel="noopener" class="text-[11px] font-semibold text-brand-700 hover:underline">Meta Portal &#8599;</a>
           </div>
-          <p class="text-[11px] text-slate-500">
-            Get your <strong>Phone Number ID</strong> and <strong>Access Token</strong> from Meta Developers &rarr; WhatsApp &rarr; API Setup.
-          </p>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div class="p-2 rounded-lg bg-amber-50 border border-amber-200 text-[11px] text-amber-900 leading-snug">
+            <strong>Important:</strong> Meta requires a <strong>Template Name</strong> (such as <code class="font-mono font-bold">hello_world</code> with <code class="font-mono">en_US</code> or your approved <code class="font-mono font-bold">receipt_thanks</code> template with <code class="font-mono">en</code>) to message donors who haven't messaged you in the last 24 hours.
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <div>
               <label for="wa-phone-id" class="block text-[11px] font-semibold text-slate-700 mb-1">Phone Number ID *</label>
               <input type="text" id="wa-phone-id" placeholder="e.g. 104928472910384"
-                class="w-full min-h-[38px] px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-xs text-slatex-900 focus:outline-none focus:border-brand-700 tabular-nums" />
+                class="w-full min-h-[38px] px-2.5 py-1.5 rounded-lg bg-white border border-slate-300 text-xs text-slatex-900 focus:outline-none focus:border-brand-700 tabular-nums" />
             </div>
             <div>
-              <label for="wa-template-name" class="block text-[11px] font-semibold text-slate-700 mb-1">Template Name (Optional)</label>
-              <input type="text" id="wa-template-name" placeholder="Leave blank for text msg"
-                class="w-full min-h-[38px] px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-xs font-mono text-slatex-900 focus:outline-none focus:border-brand-700" />
+              <label for="wa-template-name" class="block text-[11px] font-semibold text-slate-700 mb-1">Template Name</label>
+              <input type="text" id="wa-template-name" placeholder="hello_world / receipt_thanks"
+                class="w-full min-h-[38px] px-2.5 py-1.5 rounded-lg bg-white border border-slate-300 text-xs font-mono text-slatex-900 focus:outline-none focus:border-brand-700" />
+            </div>
+            <div>
+              <label for="wa-template-lang" class="block text-[11px] font-semibold text-slate-700 mb-1">Template Lang</label>
+              <select id="wa-template-lang"
+                class="w-full min-h-[38px] px-2 py-1.5 rounded-lg bg-white border border-slate-300 text-xs font-mono text-slatex-900 focus:outline-none focus:border-brand-700">
+                <option value="en_US">en_US (hello_world)</option>
+                <option value="en">en (English)</option>
+                <option value="en_IN">en_IN (India)</option>
+                <option value="ta">ta (Tamil)</option>
+              </select>
             </div>
           </div>
           <div>
@@ -1129,7 +1139,7 @@
           </div>
         </div>
 
-        <!-- Live Test Connection Strip -->
+        <!-- Live Test Connection Strip & API Diagnostic Log -->
         <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
           <label for="wa-test-phone" class="block text-[11px] font-semibold text-slate-700">
             Send Test Receipt Message (+91)
@@ -1143,6 +1153,7 @@
               Send Test
             </button>
           </div>
+          <div id="wa-diagnostic-box" class="hidden p-2.5 rounded-lg font-mono text-[11px] leading-relaxed break-words"></div>
         </div>
       </div>
 
@@ -1689,7 +1700,6 @@
             const colH = String(r[7] || '').trim();
             const knownModes = ['cash', 'online', 'cheque', 'annadhanam', 'pooja items'];
 
-            // Detect if G and H were previously swapped in the Google Sheet (e.g., G has amount/blank and H has 'Cash')
             const isSwapped = knownModes.includes(colH.toLowerCase()) && !knownModes.includes(colG.toLowerCase());
             const rawMode = isSwapped ? colH : (colG || 'Cash');
             const rawAmt = isSwapped ? colG : colH;
@@ -1738,7 +1748,6 @@
           updateGoogleSheetsUIStatus();
           return;
         }
-        // Pause background DOM re-renders while user is actively editing an existing row
         if (document.getElementById('edit-serial-no')?.value) return;
         await fetchAndApplySheetRows(gsAccessToken, cfg, { silentIfEmpty: true, isBackgroundPoll: true });
         return;
@@ -1828,7 +1837,6 @@
             const readData = await readRes.json();
             const existingSheetRows = (readData.values || []).filter(r => r && r.some(cell => String(cell || '').trim() !== ''));
 
-            // Identify the last row number & last running balance directly from Google Sheets
             let lastRowNo = 0;
             let runningBal = 0;
             const knownModes = ['cash', 'online', 'cheque', 'annadhanam', 'pooja items'];
@@ -1843,7 +1851,6 @@
               runningBal += rowAmt;
             });
 
-            // Assign exact row numbers continuing from Google Sheet's last row
             const assignedRows = newRowsList.map((row) => {
               lastRowNo += 1;
               runningBal += Number(row.amount) || 0;
@@ -1884,7 +1891,6 @@
             }
 
             gsIsWriting = false;
-            // Re-sync local state with the full Google Sheet so local & cloud row numbers match 100%
             await pullFromGoogleSheet(true, false);
             showToast(`Saved directly to Google Sheets at Row #${assignedRows[0].serialNo}!`);
             resolve(assignedRows);
@@ -2023,7 +2029,7 @@
       setTimeout(() => {
         el.style.opacity = '0';
         setTimeout(() => el.remove(), 220);
-      }, 3000);
+      }, 3500);
     }
 
     // =========================================================================
@@ -2253,7 +2259,6 @@
             showToast(rowsToInsert.length > 1 ? 'Updated & split into 2 rows!' : 'Receipt updated!');
           }
         } else if (isGoogleSheetConfigured) {
-          // Identify the last row number directly on Google Sheets and append accordingly
           const appended = await appendNewRowsDirectlyToGoogleSheet(rowsToInsert);
           if (!appended) {
             const nextNo = receipts.length > 0 ? Math.max(...receipts.map(r => Number(r.serialNo) || 0)) + 1 : 1;
@@ -2264,7 +2269,6 @@
             refreshAll();
           }
         } else {
-          // Local save when Google Sheet is not connected yet
           const nextNo = receipts.length > 0 ? Math.max(...receipts.map(r => Number(r.serialNo) || 0)) + 1 : 1;
           rowsToInsert.forEach((row, idx) => {
             receipts.push({ ...row, serialNo: nextNo + idx });
@@ -2516,11 +2520,12 @@
           phoneId: parsed.phoneId || '',
           accessToken: parsed.accessToken || '',
           templateName: parsed.templateName || '',
+          templateLang: parsed.templateLang || 'en_US',
           webhookUrl: parsed.webhookUrl || '',
           webhookToken: parsed.webhookToken || ''
         };
       } catch (e) {
-        return { mode: 'deeplink', phoneId: '', accessToken: '', templateName: '', webhookUrl: '', webhookToken: '' };
+        return { mode: 'deeplink', phoneId: '', accessToken: '', templateName: '', templateLang: 'en_US', webhookUrl: '', webhookToken: '' };
       }
     }
 
@@ -2532,7 +2537,7 @@
 
       if (cfg.mode === 'cloud_api' && cfg.phoneId && cfg.accessToken) {
         dot.className = 'w-1.5 h-1.5 rounded-full bg-blue-600';
-        label.textContent = 'WhatsApp Setup (Meta Cloud API)';
+        label.textContent = `WhatsApp Setup (Meta API${cfg.templateName ? ': ' + cfg.templateName : ''})`;
       } else if (cfg.mode === 'webhook' && cfg.webhookUrl) {
         dot.className = 'w-1.5 h-1.5 rounded-full bg-purple-600';
         label.textContent = 'WhatsApp Setup (Gateway)';
@@ -2540,6 +2545,18 @@
         dot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-600';
         label.textContent = 'WhatsApp Setup (Direct App)';
       }
+    }
+
+    function showWhatsAppDiagnostic(text, isError = false) {
+      const box = document.getElementById('wa-diagnostic-box');
+      if (!box) return;
+      box.classList.remove('hidden', 'bg-red-50', 'border-red-200', 'text-red-800', 'bg-emerald-50', 'border-emerald-200', 'text-emerald-900');
+      if (isError) {
+        box.classList.add('bg-red-50', 'border', 'border-red-200', 'text-red-800');
+      } else {
+        box.classList.add('bg-emerald-50', 'border', 'border-emerald-200', 'text-emerald-900');
+      }
+      box.textContent = text;
     }
 
     function selectWhatsAppMode(mode) {
@@ -2569,7 +2586,6 @@
 
       const win = window.open(waUrl, '_blank', 'noopener,noreferrer');
       if (!win || win.closed || typeof win.closed === 'undefined') {
-        // Browser popup blocker blocked async window.open — show clickable toast fallback
         const container = document.getElementById('toast-container');
         if (container) {
           const el = document.createElement('div');
@@ -2586,8 +2602,13 @@
       const cleanPhoneId = String(cfg.phoneId || '').replace(/\D/g, '');
       const cleanToken = String(cfg.accessToken || '').trim().replace(/^Bearer\s+/i, '');
       const cleanTemplate = String(cfg.templateName || '').trim();
+      const langCode = String(cfg.templateLang || '').trim() || (cleanTemplate.toLowerCase() === 'hello_world' ? 'en_US' : 'en');
 
-      if (cfg.mode === 'cloud_api' && cleanPhoneId && cleanToken) {
+      if (cfg.mode === 'cloud_api') {
+        if (!cleanPhoneId || !cleanToken) {
+          throw new Error('Missing Phone Number ID or Access Token in WhatsApp Setup.');
+        }
+
         let payload;
         if (cleanTemplate) {
           if (cleanTemplate.toLowerCase() === 'hello_world') {
@@ -2597,7 +2618,7 @@
               type: 'template',
               template: {
                 name: 'hello_world',
-                language: { code: 'en_US' }
+                language: { code: langCode }
               }
             };
           } else {
@@ -2609,7 +2630,7 @@
               type: 'template',
               template: {
                 name: cleanTemplate,
-                language: { code: 'en' },
+                language: { code: langCode },
                 components: [
                   {
                     type: 'body',
@@ -2632,7 +2653,7 @@
           };
         }
 
-        const res = await fetch(`https://graph.facebook.com/v21.0/${cleanPhoneId}/messages`, {
+        const res = await fetch(`https://graph.facebook.com/v22.0/${cleanPhoneId}/messages`, {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${cleanToken}`,
@@ -2642,13 +2663,18 @@
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-          const errMsg = data.error?.error_user_msg || data.error?.message || `HTTP ${res.status}`;
-          throw new Error(errMsg);
+          const code = data.error?.code ? `[Code ${data.error.code}] ` : '';
+          const subcode = data.error?.error_subcode ? `(Subcode ${data.error.error_subcode}) ` : '';
+          const detail = data.error?.error_data?.details || data.error?.error_user_msg || data.error?.message || `HTTP ${res.status}`;
+          throw new Error(`${code}${subcode}${detail}`);
         }
-        return true;
+        return data;
       }
 
-      if (cfg.mode === 'webhook' && cfg.webhookUrl) {
+      if (cfg.mode === 'webhook') {
+        if (!cfg.webhookUrl) {
+          throw new Error('Missing Webhook Endpoint URL in WhatsApp Setup.');
+        }
         const headers = { 'Content-Type': 'application/json' };
         if (cfg.webhookToken) {
           headers['Authorization'] = `Bearer ${cfg.webhookToken.trim()}`;
@@ -2679,17 +2705,19 @@
       const cfg = getWhatsAppConfig();
 
       if (directLaunchIfPhone && phone.length === 10) {
-        if ((cfg.mode === 'cloud_api' && cfg.phoneId && cfg.accessToken) || (cfg.mode === 'webhook' && cfg.webhookUrl)) {
+        if (cfg.mode === 'cloud_api' || cfg.mode === 'webhook') {
           try {
             await dispatchWhatsAppAutomated(phone, msg, target);
-            showToast(`WhatsApp thank-you sent automatically to +91 ${phone}!`);
+            showToast(`WhatsApp API delivered thank-you to +91 ${phone}!`);
             return;
           } catch (err) {
-            showToast(`Cloud API Error: ${err.message} — opening WhatsApp app instead.`, 'error');
+            showToast(`WhatsApp API Failed: ${err.message}`, 'error');
+            // Open modal so user can inspect or fallback to Direct App manually
           }
+        } else {
+          openWhatsAppDeeplinkSafely(phone, msg);
+          return;
         }
-        openWhatsAppDeeplinkSafely(phone, msg);
-        return;
       }
 
       document.getElementById('wa-modal-phone').value = phone;
@@ -2735,8 +2763,11 @@
       document.getElementById('wa-phone-id').value = cfg.phoneId || '';
       document.getElementById('wa-access-token').value = cfg.accessToken || '';
       document.getElementById('wa-template-name').value = cfg.templateName || '';
+      const langSel = document.getElementById('wa-template-lang');
+      if (langSel) langSel.value = cfg.templateLang || 'en_US';
       document.getElementById('wa-webhook-url').value = cfg.webhookUrl || '';
       document.getElementById('wa-webhook-token').value = cfg.webhookToken || '';
+      document.getElementById('wa-diagnostic-box')?.classList.add('hidden');
       selectWhatsAppMode(cfg.mode || 'deeplink');
       document.getElementById('whatsapp-config-modal').classList.remove('hidden');
     }
@@ -2745,21 +2776,22 @@
       document.getElementById('whatsapp-config-modal')?.classList.add('hidden');
     }
 
-    function saveWhatsAppConfig() {
+    function saveWhatsAppConfig(silent = false) {
       const mode = document.getElementById('wa-delivery-mode').value || 'deeplink';
       const phoneId = document.getElementById('wa-phone-id').value.trim();
       const accessToken = document.getElementById('wa-access-token').value.trim();
       const templateName = document.getElementById('wa-template-name').value.trim();
+      const templateLang = document.getElementById('wa-template-lang')?.value || 'en_US';
       const webhookUrl = document.getElementById('wa-webhook-url').value.trim();
       const webhookToken = document.getElementById('wa-webhook-token').value.trim();
 
       if (mode === 'cloud_api' && (!phoneId || !accessToken)) {
-        showToast('Enter both Phone Number ID and Access Token for Meta Cloud API.', 'error');
-        return;
+        if (!silent) showToast('Enter both Phone Number ID and Access Token for Meta Cloud API.', 'error');
+        return false;
       }
       if (mode === 'webhook' && !webhookUrl) {
-        showToast('Enter a valid Webhook Endpoint URL.', 'error');
-        return;
+        if (!silent) showToast('Enter a valid Webhook Endpoint URL.', 'error');
+        return false;
       }
 
       try {
@@ -2768,20 +2800,24 @@
           phoneId,
           accessToken,
           templateName,
+          templateLang,
           webhookUrl,
           webhookToken
         }));
       } catch (e) {}
 
       updateWhatsAppSetupBadge();
-      closeWhatsAppConfigModal();
-      showToast('WhatsApp messaging setup saved!');
+      if (!silent) {
+        closeWhatsAppConfigModal();
+        showToast('WhatsApp messaging setup saved!');
+      }
+      return true;
     }
 
     async function sendTestWhatsAppMessage() {
       const phone = document.getElementById('wa-test-phone').value.replace(/\D/g, '').slice(-10);
       if (phone.length !== 10) {
-        showToast('Enter a valid 10-digit mobile number to test.', 'error');
+        showWhatsAppDiagnostic('Error: Enter a valid 10-digit Indian mobile number above.', true);
         document.getElementById('wa-test-phone').focus();
         return;
       }
@@ -2799,16 +2835,29 @@
 
       if (mode === 'deeplink') {
         openWhatsAppDeeplinkSafely(phone, testMsg);
-        showToast(`Opened WhatsApp test chat for +91 ${phone}!`);
+        showWhatsAppDiagnostic(`Opened WhatsApp Direct App chat for +91 ${phone}.`, false);
         return;
       }
 
-      saveWhatsAppConfig();
+      if (!saveWhatsAppConfig(true)) {
+        showWhatsAppDiagnostic('Error: Please fill in Phone Number ID and Access Token first.', true);
+        return;
+      }
+
+      showWhatsAppDiagnostic(`Sending API request to +91 ${phone}...`, false);
       try {
-        await dispatchWhatsAppAutomated(phone, testMsg, testSample);
+        const resp = await dispatchWhatsAppAutomated(phone, testMsg, testSample);
+        const msgId = resp?.messages?.[0]?.id ? ` (Message ID: ${resp.messages[0].id})` : '';
+        showWhatsAppDiagnostic(`Success! Meta WhatsApp API accepted the message for +91 ${phone}${msgId}.`, false);
         showToast(`Test WhatsApp message delivered to +91 ${phone}!`);
       } catch (err) {
-        showToast(`Test send failed: ${err.message}`, 'error');
+        let hint = '';
+        if (err.message.includes('131030')) hint = ' → Add +91 ' + phone + ' to "Manage phone number list" in Meta API Setup.';
+        else if (err.message.includes('132001')) hint = ' → Check Template Name & Language (e.g. hello_world + en_US, or receipt_thanks + en).';
+        else if (err.message.includes('190')) hint = ' → Your Temporary Access Token expired (24h limit). Generate a new token in Meta API Setup.';
+        else if (err.message.includes('100')) hint = ' → Verify you copied the Phone Number ID (not WhatsApp Business Account ID) and template parameters match.';
+        showWhatsAppDiagnostic(`Meta API Error: ${err.message}${hint}`, true);
+        showToast(`Test send failed — see diagnostic message below.`, 'error');
       }
     }
 
