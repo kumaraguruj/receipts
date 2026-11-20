@@ -149,9 +149,9 @@
             </h2>
           </div>
           <div class="flex items-center gap-2">
-            <span class="text-xs font-medium text-slate-500">Serial No:</span>
+            <span class="text-xs font-medium text-slate-500">Row / S.No:</span>
             <span id="next-serial-badge" class="font-mono font-bold text-xs px-2.5 py-1 rounded-md bg-brand-50 text-brand-800 border border-brand-200 tabular-nums">
-              #7
+              Auto on Save
             </span>
           </div>
         </div>
@@ -322,7 +322,7 @@
 
           <!-- Primary Submit & Clear Row -->
           <div class="pt-2.5 border-t border-slate-100 flex flex-wrap items-center gap-2">
-            <button type="submit" id="submit-btn"
+            <button type="submit" id="submit-btn" onclick="saveToGoogleSheetOnClick(event)"
               class="flex-1 min-h-[44px] px-4 py-2.5 rounded-lg bg-brand-800 hover:bg-brand-700 text-white text-sm font-semibold shadow-xs transition cursor-pointer">
               Add to sheet
             </button>
@@ -1339,7 +1339,6 @@
     let recentRecordsLimit = 5;
     let registerDisplayMode = 'feed';
     let pendingDeleteSerialNo = null;
-    let pendingWhatsAppAfterSubmit = false;
 
     function normalizeReceiptsData(rawList) {
       const monetaryModes = ['Cash', 'Online', 'Cheque'];
@@ -1732,9 +1731,88 @@
       });
     }
 
+    async function appendNewRowsDirectlyToGoogleSheet(newRowsList) {
+      return new Promise((resolve) => {
+        ensureGoogleAuthThen(async (token, cfg) => {
+          try {
+            const sheetTab = cfg.sheetName || 'Receipts';
+            const readRange = encodeURIComponent(`${sheetTab}!A2:J`);
+            const readRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${cfg.spreadsheetId}/values/${readRange}`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            if (!readRes.ok) {
+              const err = await readRes.json().catch(() => ({}));
+              throw new Error(err.error?.message || `Read HTTP ${readRes.status}`);
+            }
+
+            const readData = await readRes.json();
+            const existingSheetRows = (readData.values || []).filter(r => r && r.some(cell => String(cell || '').trim() !== ''));
+
+            // Identify the last row number & last running balance directly from Google Sheets
+            let lastRowNo = 0;
+            let runningBal = 0;
+            existingSheetRows.forEach((r, idx) => {
+              const parsedSNo = parseInt(r[0], 10);
+              lastRowNo = Math.max(lastRowNo, !isNaN(parsedSNo) ? parsedSNo : (idx + 1));
+              const rowAmt = parseFloat(String(r[6] || '0').replace(/[^0-9.-]/g, '')) || 0;
+              runningBal += rowAmt;
+            });
+
+            // Assign exact row numbers continuing from Google Sheet's last row
+            const assignedRows = newRowsList.map((row) => {
+              lastRowNo += 1;
+              runningBal += Number(row.amount) || 0;
+              return {
+                ...row,
+                serialNo: lastRowNo,
+                runningBalance: runningBal
+              };
+            });
+
+            const valuesToAppend = assignedRows.map(r => [
+              r.serialNo,
+              r.receiptNo || '',
+              toDisplayDate(r.date),
+              r.donorName || '',
+              r.careOf || '',
+              r.phoneNo || '',
+              Number(r.amount) > 0 ? Number(r.amount) : '',
+              r.mode || 'Cash',
+              formatMaterialsString(r.materials),
+              r.runningBalance
+            ]);
+
+            const appendRange = encodeURIComponent(`${sheetTab}!A2:J`);
+            const appendUrl = `https://sheets.googleapis.com/v4/spreadsheets/${cfg.spreadsheetId}/values/${appendRange}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
+            const appendRes = await fetch(appendUrl, {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ values: valuesToAppend })
+            });
+
+            if (!appendRes.ok) {
+              const err = await appendRes.json().catch(() => ({}));
+              throw new Error(err.error?.message || `Append HTTP ${appendRes.status}`);
+            }
+
+            // Re-sync local state with the full Google Sheet so local & cloud row numbers match 100%
+            await pullFromGoogleSheet(true);
+            showToast(`Saved directly to Google Sheets at Row #${assignedRows[0].serialNo}!`);
+            resolve(assignedRows);
+          } catch (err) {
+            showToast(`Direct Sheet Save failed: ${err.message}`, 'error');
+            resolve(null);
+          }
+        });
+      });
+    }
+
     function maybeAutoPushToGoogleSheet() {
       const cfg = getGoogleSheetsConfig();
-      if (cfg.autoSync && cfg.spreadsheetId && cfg.clientId && gsAccessToken && Date.now() < gsTokenExpiresAt) {
+      if (cfg.spreadsheetId && cfg.clientId && cfg.autoSync !== false && gsAccessToken && Date.now() < gsTokenExpiresAt) {
         pushAllToGoogleSheet(true);
       }
     }
@@ -1977,7 +2055,12 @@
       `).join('');
     }
 
-    function handleFormSubmit(e) {
+    function saveToGoogleSheetOnClick(e) {
+      if (e) e.preventDefault();
+      handleFormSubmit(e);
+    }
+
+    async function handleFormSubmit(e) {
       if (e) e.preventDefault();
 
       const donorInput = document.getElementById('donor-name');
@@ -2055,25 +2138,61 @@
         });
       }
 
-      if (editSerial && editSerial >= 1 && editSerial <= receipts.length) {
-        receipts.splice(editSerial - 1, 1, ...rowsToInsert);
-        showToast(rowsToInsert.length > 1 ? 'Updated & split into 2 rows (Cash + Annadhanam)!' : 'Receipt updated!');
-      } else {
-        receipts.push(...rowsToInsert);
-        showToast(rowsToInsert.length > 1 ? 'Saved as 2 separate rows (Monetary + Material)!' : 'Receipt added to sheet!');
+      const submitBtn = document.getElementById('submit-btn');
+      const prevBtnText = submitBtn ? submitBtn.textContent : 'Add to sheet';
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Saving to Sheet...';
       }
 
-      receipts = receipts.map((r, i) => ({ ...r, serialNo: i + 1 }));
-      persistReceipts();
-      refreshAll();
-      maybeAutoPushToGoogleSheet();
+      try {
+        const cfg = getGoogleSheetsConfig();
+        const isGoogleSheetConfigured = Boolean(cfg.spreadsheetId && cfg.clientId);
 
-      const autoWA = document.getElementById('auto-whatsapp-toggle')?.checked;
-      const latestSaved = receipts[receipts.length - 1];
-      clearForm(false);
+        if (editSerial && editSerial >= 1 && editSerial <= receipts.length) {
+          receipts.splice(editSerial - 1, 1, ...rowsToInsert);
+          receipts = receipts.map((r, i) => ({ ...r, serialNo: i + 1 }));
+          persistReceipts();
+          refreshAll();
+          if (isGoogleSheetConfigured) {
+            await pushAllToGoogleSheet(false);
+          } else {
+            showToast(rowsToInsert.length > 1 ? 'Updated & split into 2 rows!' : 'Receipt updated!');
+          }
+        } else if (isGoogleSheetConfigured) {
+          // Identify the last row number directly on Google Sheets and append accordingly
+          const appended = await appendNewRowsDirectlyToGoogleSheet(rowsToInsert);
+          if (!appended) {
+            const nextNo = receipts.length > 0 ? Math.max(...receipts.map(r => Number(r.serialNo) || 0)) + 1 : 1;
+            rowsToInsert.forEach((row, idx) => {
+              receipts.push({ ...row, serialNo: nextNo + idx });
+            });
+            persistReceipts();
+            refreshAll();
+          }
+        } else {
+          // Local save when Google Sheet is not connected yet
+          const nextNo = receipts.length > 0 ? Math.max(...receipts.map(r => Number(r.serialNo) || 0)) + 1 : 1;
+          rowsToInsert.forEach((row, idx) => {
+            receipts.push({ ...row, serialNo: nextNo + idx });
+          });
+          persistReceipts();
+          refreshAll();
+          showToast(rowsToInsert.length > 1 ? `Saved as 2 rows (#${nextNo} & #${nextNo + 1})!` : `Receipt saved as Row #${nextNo}!`);
+        }
 
-      if (autoWA && phoneNo.length === 10 && latestSaved) {
-        shareReceiptWhatsApp(latestSaved.serialNo, true);
+        const autoWA = document.getElementById('auto-whatsapp-toggle')?.checked;
+        const latestSaved = receipts[receipts.length - 1];
+        clearForm(false);
+
+        if (autoWA && phoneNo.length === 10 && latestSaved) {
+          shareReceiptWhatsApp(latestSaved.serialNo, true);
+        }
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = prevBtnText;
+        }
       }
     }
 
@@ -2101,7 +2220,7 @@
       document.getElementById('form-heading').textContent = 'New Receipt Entry';
       document.getElementById('form-mode-indicator').className = 'w-2.5 h-2.5 rounded-full bg-brand-600';
       document.getElementById('submit-btn').textContent = 'Add to sheet';
-      document.getElementById('next-serial-badge').textContent = `#${receipts.length + 1}`;
+      document.getElementById('next-serial-badge').textContent = 'Auto on Save';
     }
 
     function editReceiptRow(serialNo) {
@@ -2575,61 +2694,6 @@
       }
     }
 
-    function openWhatsAppConfigModal() {
-      const cfg = getWhatsAppConfig();
-      document.getElementById('wa-phone-id').value = cfg.phoneId || '';
-      document.getElementById('wa-access-token').value = cfg.accessToken || '';
-      document.getElementById('whatsapp-config-modal').classList.remove('hidden');
-    }
-
-    function closeWhatsAppConfigModal() {
-      document.getElementById('whatsapp-config-modal')?.classList.add('hidden');
-    }
-
-    function saveWhatsAppConfig() {
-      const phoneId = document.getElementById('wa-phone-id').value.trim();
-      const accessToken = document.getElementById('wa-access-token').value.trim();
-      try {
-        localStorage.setItem(WA_CONFIG_KEY, JSON.stringify({ phoneId, accessToken }));
-      } catch (e) {}
-      closeWhatsAppConfigModal();
-      showToast('WhatsApp API settings saved.');
-    }
-
-    async function sendViaCloudAPI() {
-      const cfg = getWhatsAppConfig();
-      const phone = document.getElementById('wa-modal-phone').value.replace(/\D/g, '').slice(-10);
-      const msg = document.getElementById('wa-modal-message').value;
-      if (!cfg.phoneId || !cfg.accessToken) {
-        openWhatsAppConfigModal();
-        return;
-      }
-      if (phone.length !== 10) {
-        showToast('Enter a valid 10-digit mobile number for Cloud API send.', 'error');
-        return;
-      }
-      try {
-        const res = await fetch(`https://graph.facebook.com/v19.0/${cfg.phoneId}/messages`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${cfg.accessToken}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            messaging_product: 'whatsapp',
-            to: `91${phone}`,
-            type: 'text',
-            text: { body: msg }
-          })
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        closeWhatsAppModal();
-        showToast(`Sent WhatsApp message to +91 ${phone}!`);
-      } catch (err) {
-        showToast(`Cloud API Error: ${err.message}`, 'error');
-      }
-    }
-
     // =========================================================================
     // 8. EXECUTIVE DASHBOARD FILTERS & GOOGLE SHEETS FORMULA GENERATOR
     // =========================================================================
@@ -2971,7 +3035,7 @@
 
       const editSerial = document.getElementById('edit-serial-no').value;
       if (!editSerial) {
-        document.getElementById('next-serial-badge').textContent = `#${receipts.length + 1}`;
+        document.getElementById('next-serial-badge').textContent = 'Auto on Save';
       }
     }
 
@@ -3542,7 +3606,7 @@
       buffer.setSelectionRange(0, 99999);
       try {
         document.execCommand('copy');
-        showToast(`Copied ${receipts.length} rows! Paste intoReceipts!A2 in Google Sheets.`);
+        showToast(`Copied ${receipts.length} rows! Paste into Receipts!A2 in Google Sheets.`);
       } catch (e) {
         showToast('Press Ctrl+C to copy from the Sheet Sync tab.', 'info');
       }
@@ -3687,6 +3751,7 @@
 
     // Expose all inline HTML event handlers cleanly on window
     Object.assign(window, {
+      saveToGoogleSheetOnClick,
       openSheetsConnectModal,
       copyDetectedOrigin,
       closeSheetsConnectModal,
