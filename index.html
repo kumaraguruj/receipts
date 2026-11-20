@@ -41,14 +41,24 @@
     }
   </script>
   <style>
-    body {
+    html, body {
+      max-width: 100%;
+      overflow-x: hidden;
       background-color: #F8FAFC;
       color: #0F172A;
       font-family: 'Inter', sans-serif;
       -webkit-font-smoothing: antialiased;
+      -webkit-tap-highlight-color: transparent;
     }
     .tabular-nums {
       font-variant-numeric: tabular-nums;
+    }
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
     }
     ::-webkit-scrollbar {
       width: 6px;
@@ -72,43 +82,43 @@
   <header class="sticky top-0 z-30 bg-brand-900 text-white shadow-xs">
     <!-- Top Branding Row -->
     <div class="border-b border-white/10">
-      <div class="max-w-[1440px] mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-2">
+      <div class="max-w-[1440px] mx-auto px-3 sm:px-6 py-2.5 sm:py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
         <div class="flex items-center gap-3 min-w-0">
-          <div class="min-w-0">
-            <div class="flex flex-wrap items-center gap-2">
-              <h1 class="font-display font-bold text-base sm:text-xl tracking-tight text-white">
+          <div class="min-w-0 flex-1">
+            <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
+              <h1 class="font-display font-bold text-sm sm:text-xl tracking-tight text-white leading-snug">
                 Sri Ayyappa Swami Seva Sangam
               </h1>
-              <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-amber-400/20 text-amber-300 border border-amber-400/30 whitespace-nowrap shrink-0">
+              <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-semibold bg-amber-400/20 text-amber-300 border border-amber-400/30 whitespace-nowrap shrink-0">
                 Receipts 2026
               </span>
             </div>
-            <p class="text-xs text-slate-300 mt-0.5 truncate sm:whitespace-normal">
+            <p class="text-[11px] sm:text-xs text-slate-300 mt-0.5 truncate sm:whitespace-normal">
               Workbook Sync &middot; <span class="font-mono text-slate-200">Receipts</span>, <span class="font-mono text-slate-200">Requirements</span>, <span class="font-mono text-slate-200">Dashboard</span> &amp; <span class="font-mono text-slate-200">Careoff</span>
             </p>
           </div>
         </div>
 
         <!-- Live Google Sheets Direct API Status & Quick Sync Controls -->
-        <div class="flex flex-wrap items-center gap-2">
+        <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
           <button type="button" onclick="openSheetsConnectModal()" id="header-sheets-status-btn"
-            class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/10 hover:bg-white/15 text-slate-100 border border-white/15 transition cursor-pointer">
-            <span id="header-sheets-dot" class="w-2 h-2 rounded-full bg-amber-400"></span>
-            <span id="header-sheets-label">Connect Google Sheet</span>
+            class="inline-flex items-center justify-center gap-2 min-h-[36px] px-2.5 sm:px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold bg-white/10 hover:bg-white/15 text-slate-100 border border-white/15 transition cursor-pointer">
+            <span id="header-sheets-dot" class="w-2 h-2 rounded-full bg-amber-400 shrink-0"></span>
+            <span id="header-sheets-label" class="truncate max-w-[175px] sm:max-w-none">Connect Google Sheet</span>
           </button>
-          <span id="header-sheets-live-badge" class="hidden inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-mono font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+          <span id="header-sheets-live-badge" class="hidden inline-flex items-center gap-1.5 min-h-[36px] px-2 py-1.5 rounded-lg text-[10px] sm:text-[11px] font-mono font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 whitespace-nowrap">
             <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
-            <span>Live 5s Sync</span>
+            <span>Live 5s</span>
           </span>
           <button type="button" onclick="pullFromGoogleSheet()" id="header-sheets-pull-btn"
-            class="hidden inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs transition cursor-pointer"
+            class="hidden inline-flex items-center gap-1 min-h-[36px] px-2.5 sm:px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs transition cursor-pointer whitespace-nowrap"
             title="Read latest rows from Receipts 2026 Google Sheet">
-            <span>&#8635; Read Sheet</span>
+            <span>&#8635; Read</span>
           </button>
           <button type="button" onclick="pushAllToGoogleSheet()" id="header-sheets-push-btn"
-            class="hidden inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-600 hover:bg-brand-500 text-white shadow-xs transition cursor-pointer"
+            class="hidden inline-flex items-center gap-1 min-h-[36px] px-2.5 sm:px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold bg-brand-600 hover:bg-brand-500 text-white shadow-xs transition cursor-pointer whitespace-nowrap"
             title="Write all rows to Receipts 2026 Google Sheet">
-            <span>&#8679; Write Sheet</span>
+            <span>&#8679; Write</span>
           </button>
         </div>
       </div>
@@ -116,18 +126,18 @@
 
     <!-- Navigation Menu Bar (Below the Header Title) -->
     <div class="bg-brand-800/95 border-b border-brand-800">
-      <div class="max-w-[1440px] mx-auto px-4 sm:px-6 py-2 overflow-x-auto">
+      <div class="max-w-[1440px] mx-auto px-3 sm:px-6 py-2 overflow-x-auto no-scrollbar">
         <nav class="flex items-center gap-1.5 min-w-max" aria-label="Main Tabs">
-          <button type="button" data-tab="receipts" class="nav-tab px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap transition cursor-pointer bg-white text-brand-900 shadow-xs">
+          <button type="button" data-tab="receipts" class="nav-tab min-h-[38px] px-3.5 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap transition cursor-pointer bg-white text-brand-900 shadow-xs">
             Receipts Entry
           </button>
-          <button type="button" data-tab="dashboard" class="nav-tab px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap transition cursor-pointer text-slate-200 hover:text-white hover:bg-white/10">
+          <button type="button" data-tab="dashboard" class="nav-tab min-h-[38px] px-3.5 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap transition cursor-pointer text-slate-200 hover:text-white hover:bg-white/10">
             Executive Dashboard
           </button>
-          <button type="button" data-tab="requirements" class="nav-tab px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap transition cursor-pointer text-slate-200 hover:text-white hover:bg-white/10">
+          <button type="button" data-tab="requirements" class="nav-tab min-h-[38px] px-3.5 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap transition cursor-pointer text-slate-200 hover:text-white hover:bg-white/10">
             Requirements (53)
           </button>
-          <button type="button" data-tab="export" class="nav-tab px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap transition cursor-pointer text-slate-200 hover:text-white hover:bg-white/10">
+          <button type="button" data-tab="export" class="nav-tab min-h-[38px] px-3.5 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap transition cursor-pointer text-slate-200 hover:text-white hover:bg-white/10">
             Sheet Sync / Export
           </button>
         </nav>
@@ -136,25 +146,25 @@
   </header>
 
   <!-- Main Content Container -->
-  <main class="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 pt-4 sm:pt-6">
+  <main class="flex-1 max-w-[1440px] w-full mx-auto px-3 sm:px-6 pt-3.5 sm:pt-6">
 
     <!-- ========================================== -->
     <!-- VIEW 1: RECEIPTS ENTRY + LIVE REGISTER     -->
     <!-- ========================================== -->
-    <div id="view-receipts" class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+    <div id="view-receipts" class="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 items-start">
 
       <!-- Left / Top Column: Fast Receipt Entry Form (5 cols on Desktop) -->
-      <section class="lg:col-span-5 bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
-        <div class="px-4 sm:px-5 py-3.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <span id="form-mode-indicator" class="w-2.5 h-2.5 rounded-full bg-brand-600"></span>
-            <h2 id="form-heading" class="font-display font-bold text-sm sm:text-base text-slatex-900">
+      <section class="lg:col-span-5 bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden min-w-0">
+        <div class="px-4 py-3.5 sm:px-5 border-b border-slate-200 bg-slate-50/70 flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2 min-w-0">
+            <span id="form-mode-indicator" class="w-2.5 h-2.5 rounded-full bg-brand-600 shrink-0"></span>
+            <h2 id="form-heading" class="font-display font-bold text-sm sm:text-base text-slatex-900 truncate">
               New Receipt Entry
             </h2>
           </div>
-          <div class="flex items-center gap-2">
-            <span class="text-xs font-medium text-slate-500">Row / S.No:</span>
-            <span id="next-serial-badge" class="font-mono font-bold text-xs px-2.5 py-1 rounded-md bg-brand-50 text-brand-800 border border-brand-200 tabular-nums">
+          <div class="flex items-center gap-1.5 shrink-0">
+            <span class="text-[11px] font-medium text-slate-500">Serial</span>
+            <span id="next-serial-badge" class="px-2.5 py-0.5 rounded-md bg-brand-50 text-brand-800 border border-brand-200 font-mono text-xs font-bold tabular-nums">
               Auto on Save
             </span>
           </div>
@@ -238,12 +248,12 @@
 
           <!-- Quick Denomination Chips -->
           <div class="flex flex-wrap items-center gap-1.5 pt-0.5">
-            <span class="text-[11px] font-medium text-slate-400 mr-1">Quick Add:</span>
-            <button type="button" onclick="addQuickAmount(100)" class="px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer tabular-nums">+₹100</button>
-            <button type="button" onclick="addQuickAmount(500)" class="px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer tabular-nums">+₹500</button>
-            <button type="button" onclick="addQuickAmount(1000)" class="px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer tabular-nums">+₹1,000</button>
-            <button type="button" onclick="addQuickAmount(2500)" class="px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer tabular-nums">+₹2,500</button>
-            <button type="button" onclick="addQuickAmount(5000)" class="px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer tabular-nums">+₹5,000</button>
+            <span class="text-[11px] font-medium text-slate-400 mr-0.5">Quick Add:</span>
+            <button type="button" onclick="addQuickAmount(100)" class="min-h-[34px] px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 transition cursor-pointer tabular-nums">+₹100</button>
+            <button type="button" onclick="addQuickAmount(500)" class="min-h-[34px] px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 transition cursor-pointer tabular-nums">+₹500</button>
+            <button type="button" onclick="addQuickAmount(1000)" class="min-h-[34px] px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 transition cursor-pointer tabular-nums">+₹1,000</button>
+            <button type="button" onclick="addQuickAmount(2500)" class="min-h-[34px] px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 transition cursor-pointer tabular-nums">+₹2,500</button>
+            <button type="button" onclick="addQuickAmount(5000)" class="min-h-[34px] px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 transition cursor-pointer tabular-nums">+₹5,000</button>
           </div>
 
           <!-- Row 4: Mode Selector Pills -->
@@ -273,26 +283,26 @@
 
           <!-- Row 5: Materials Builder -->
           <div class="pt-2 border-t border-slate-200">
-            <div class="flex items-center justify-between mb-1.5">
+            <div class="flex flex-wrap items-center justify-between gap-1 mb-1.5">
               <label for="material-item-select" class="block text-xs font-semibold text-slate-700">
-                Materials (Optional &mdash; Annadhanam / Pooja Items)
+                Materials (Optional &mdash; Annadhanam / Pooja)
               </label>
-              <span class="text-[11px] text-slate-400">Auto-formats <code class="font-mono">Item - Qty Unit</code></span>
+              <span class="text-[11px] text-slate-400">Formats <code class="font-mono">Item - Qty Unit</code></span>
             </div>
 
             <div class="flex flex-col sm:flex-row gap-2">
               <select id="material-item-select"
-                class="flex-1 min-h-[40px] px-2.5 py-1.5 rounded-lg bg-white border border-slate-300 text-xs sm:text-sm text-slatex-900 focus:outline-none focus:border-brand-700">
+                class="w-full sm:flex-1 min-w-0 min-h-[42px] px-2.5 py-1.5 rounded-lg bg-white border border-slate-300 text-xs sm:text-sm text-slatex-900 focus:outline-none focus:border-brand-700">
                 <option value="">Choose item...</option>
               </select>
-              <div class="flex items-center gap-2">
-                <input type="number" id="material-qty-input" min="0.1" step="any" placeholder="Qty"
-                  class="w-24 min-h-[40px] px-2.5 py-1.5 rounded-lg bg-white border border-slate-300 text-xs sm:text-sm text-slatex-900 focus:outline-none focus:border-brand-700 tabular-nums" />
-                <span id="material-unit-badge" class="min-w-[44px] text-center text-xs font-mono font-semibold text-slate-500 bg-slate-100 px-2 py-2 rounded-lg border border-slate-200">
+              <div class="flex items-center gap-2 shrink-0">
+                <input type="number" id="material-qty-input" min="0.1" step="any" inputmode="decimal" placeholder="Qty"
+                  class="flex-1 sm:w-24 min-h-[42px] px-2.5 py-1.5 rounded-lg bg-white border border-slate-300 text-xs sm:text-sm text-slatex-900 focus:outline-none focus:border-brand-700 tabular-nums" />
+                <span id="material-unit-badge" class="min-w-[44px] min-h-[42px] flex items-center justify-center text-xs font-mono font-semibold text-slate-500 bg-slate-100 px-2 py-2 rounded-lg border border-slate-200">
                   unit
                 </span>
                 <button type="button" id="add-material-btn"
-                  class="min-h-[40px] px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold transition shrink-0 cursor-pointer">
+                  class="min-h-[42px] px-3.5 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white text-xs font-semibold transition shrink-0 cursor-pointer">
                   + Add
                 </button>
               </div>
@@ -340,12 +350,12 @@
       </section>
 
       <!-- Right / Bottom Column: Live Receipts Register (7 cols on Desktop) -->
-      <section class="lg:col-span-7 bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+      <section class="lg:col-span-7 bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden min-w-0">
         <!-- Register Header Bar -->
-        <div class="p-4 sm:px-5 border-b border-slate-200 space-y-3">
-          <div class="flex flex-wrap items-center justify-between gap-2">
+        <div class="p-3.5 sm:p-5 border-b border-slate-200 space-y-3">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
             <div>
-              <div class="flex items-center gap-2">
+              <div class="flex flex-wrap items-center gap-2">
                 <h2 class="font-display font-bold text-sm sm:text-base text-slatex-900">
                   Recent Receipts
                 </h2>
@@ -353,19 +363,19 @@
                   Last 5 records
                 </span>
               </div>
-              <p class="text-xs text-slate-500">Showing latest entries &middot; Running Balance</p>
+              <p class="text-xs text-slate-500 mt-0.5">Showing latest entries &middot; Running Balance</p>
             </div>
 
-            <div class="flex items-center gap-2">
+            <div class="flex flex-wrap items-center gap-2">
               <!-- Limit Selector -->
               <div class="inline-flex rounded-lg bg-slate-100 p-0.5 border border-slate-200 text-xs">
-                <button type="button" onclick="setRecentLimit(5)" id="limit-btn-5" class="px-2.5 py-1 rounded-md font-semibold bg-white text-slatex-900 shadow-2xs cursor-pointer">
+                <button type="button" onclick="setRecentLimit(5)" id="limit-btn-5" class="min-h-[32px] px-2.5 py-1 rounded-md font-semibold bg-white text-slatex-900 shadow-2xs cursor-pointer">
                   Last 5
                 </button>
-                <button type="button" onclick="setRecentLimit(10)" id="limit-btn-10" class="px-2.5 py-1 rounded-md font-semibold text-slate-600 hover:text-slatex-900 cursor-pointer">
+                <button type="button" onclick="setRecentLimit(10)" id="limit-btn-10" class="min-h-[32px] px-2.5 py-1 rounded-md font-semibold text-slate-600 hover:text-slatex-900 cursor-pointer">
                   Last 10
                 </button>
-                <button type="button" onclick="setRecentLimit(15)" id="limit-btn-15" class="px-2.5 py-1 rounded-md font-semibold text-slate-600 hover:text-slatex-900 cursor-pointer">
+                <button type="button" onclick="setRecentLimit(15)" id="limit-btn-15" class="min-h-[32px] px-2.5 py-1 rounded-md font-semibold text-slate-600 hover:text-slatex-900 cursor-pointer">
                   Last 15
                 </button>
               </div>
@@ -373,11 +383,11 @@
               <!-- View Switcher: Feed vs Sheet Table -->
               <div class="inline-flex rounded-lg bg-slate-100 p-0.5 border border-slate-200">
                 <button type="button" id="view-toggle-feed" onclick="setRegisterDisplayMode('feed')"
-                  class="px-2.5 py-1 rounded-md text-xs font-semibold bg-white text-slatex-900 shadow-2xs cursor-pointer">
+                  class="min-h-[32px] px-2.5 py-1 rounded-md text-xs font-semibold bg-white text-slatex-900 shadow-2xs cursor-pointer">
                   Feed
                 </button>
                 <button type="button" id="view-toggle-table" onclick="setRegisterDisplayMode('table')"
-                  class="px-2.5 py-1 rounded-md text-xs font-semibold text-slate-600 hover:text-slatex-900 cursor-pointer">
+                  class="min-h-[32px] px-2.5 py-1 rounded-md text-xs font-semibold text-slate-600 hover:text-slatex-900 cursor-pointer">
                   Ledger (A:J)
                 </button>
               </div>
@@ -390,7 +400,7 @@
 
         <!-- Mode B: Full 10-Column Spreadsheet Table View -->
         <div id="register-table-container" class="hidden overflow-x-auto max-h-[620px] overflow-y-auto">
-          <table class="w-full text-left border-collapse">
+          <table class="w-full min-w-[760px] text-left border-collapse">
             <thead class="bg-slate-50 border-b border-slate-200 sticky top-0 z-10 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
               <tr>
                 <th class="py-2.5 px-3">A &middot; S.No</th>
@@ -415,11 +425,11 @@
     <!-- ========================================== -->
     <!-- VIEW 2: EXECUTIVE DASHBOARD                -->
     <!-- ========================================== -->
-    <div id="view-dashboard" class="hidden space-y-6">
+    <div id="view-dashboard" class="hidden space-y-4 sm:space-y-6">
       <!-- Dashboard Header & Filter Bar -->
-      <div class="bg-white rounded-xl border border-slate-200 p-4 sm:p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div class="flex items-center gap-2">
+      <div class="bg-white rounded-xl border border-slate-200 p-4 sm:p-5 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div class="min-w-0">
+          <div class="flex flex-wrap items-center gap-2">
             <span class="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-brand-50 text-brand-700 border border-brand-200">Executive Cockpit</span>
             <span id="dash-active-filter-badge" class="hidden text-[11px] font-semibold px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200">Filtered View</span>
           </div>
@@ -429,35 +439,35 @@
           <p class="text-xs text-slate-500">Live aggregation of <code class="font-mono">Receipts</code>, <code class="font-mono">Careoff</code> &amp; <code class="font-mono">Requirements (53)</code></p>
         </div>
 
-        <div class="flex flex-wrap items-center gap-2">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-wrap items-center gap-2">
           <select id="dash-filter-careoff" onchange="renderDashboardView()"
-            class="min-h-[38px] px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-300 text-xs font-medium text-slate-700 focus:outline-none focus:bg-white focus:border-brand-700">
+            class="w-full lg:w-auto min-h-[40px] px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-300 text-xs font-medium text-slate-700 focus:outline-none focus:bg-white focus:border-brand-700">
             <option value="ALL">All Careoffs</option>
           </select>
 
           <select id="dash-filter-book" onchange="renderDashboardView()"
-            class="min-h-[38px] px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-300 text-xs font-medium text-slate-700 focus:outline-none focus:bg-white focus:border-brand-700">
+            class="w-full lg:w-auto min-h-[40px] px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-300 text-xs font-medium text-slate-700 focus:outline-none focus:bg-white focus:border-brand-700">
             <option value="ALL">All 20 Books (001-1000)</option>
           </select>
 
           <select id="dash-filter-date" onchange="renderDashboardView()"
-            class="min-h-[38px] px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-300 text-xs font-medium text-slate-700 focus:outline-none focus:bg-white focus:border-brand-700">
+            class="w-full lg:w-auto min-h-[40px] px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-300 text-xs font-medium text-slate-700 focus:outline-none focus:bg-white focus:border-brand-700">
             <option value="ALL">All Dates</option>
           </select>
 
           <button type="button" onclick="resetDashboardFilters()" id="dash-reset-filter-btn"
-            class="hidden min-h-[38px] px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition cursor-pointer">
-            Reset
+            class="hidden w-full sm:w-auto min-h-[40px] px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition cursor-pointer">
+            Reset Filters
           </button>
 
           <button type="button" onclick="copyGoogleSheetsDashboardFormulas()"
-            class="min-h-[38px] px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-2xs transition cursor-pointer"
+            class="w-full sm:w-auto min-h-[40px] px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-2xs transition cursor-pointer whitespace-nowrap"
             title="Copy live Google Sheets formulas (=SUMIF, =COUNTIF, =QUERY) to paste into Dashboard!A1">
             Copy Sheet Formulas (A1)
           </button>
 
           <button type="button" onclick="copyDashboardSummary()"
-            class="min-h-[38px] px-3.5 py-1.5 rounded-lg bg-brand-800 hover:bg-brand-700 text-white text-xs font-semibold shadow-2xs transition cursor-pointer">
+            class="w-full sm:w-auto min-h-[40px] px-3.5 py-1.5 rounded-lg bg-brand-800 hover:bg-brand-700 text-white text-xs font-semibold shadow-2xs transition cursor-pointer whitespace-nowrap">
             Copy Summary
           </button>
         </div>
@@ -553,12 +563,12 @@
       <!-- Main Analytics Grid: Mode Breakdown, Careoff Performance, and Date-Wise Summary -->
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <!-- Left 4 Cols: Mode Breakdown + Top Contributors -->
-        <div class="lg:col-span-4 space-y-6">
+        <div class="lg:col-span-4 space-y-6 min-w-0">
           <div class="bg-white rounded-xl border border-slate-200 p-4 sm:p-5 shadow-xs">
             <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">
               Collections by Mode
             </h3>
-            <div class="overflow-hidden rounded-xl border border-slate-200">
+            <div class="overflow-x-auto rounded-xl border border-slate-200">
               <table class="w-full text-left border-collapse text-xs sm:text-sm">
                 <thead class="bg-slate-50 border-b border-slate-200 text-[11px] font-semibold uppercase text-slate-500">
                   <tr>
@@ -586,7 +596,7 @@
         </div>
 
         <!-- Middle 5 Cols: Careoff Wise Performance Table -->
-        <div class="lg:col-span-5 bg-white rounded-xl border border-slate-200 p-4 sm:p-5 shadow-xs flex flex-col">
+        <div class="lg:col-span-5 bg-white rounded-xl border border-slate-200 p-4 sm:p-5 shadow-xs flex flex-col min-w-0">
           <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
             <div>
               <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500">
@@ -603,8 +613,8 @@
             </div>
           </div>
 
-          <div class="overflow-hidden rounded-xl border border-slate-200 flex-1 max-h-[460px] overflow-y-auto">
-            <table class="w-full text-left border-collapse text-xs sm:text-sm">
+          <div class="overflow-x-auto rounded-xl border border-slate-200 flex-1 max-h-[460px] overflow-y-auto">
+            <table class="w-full min-w-[380px] text-left border-collapse text-xs sm:text-sm">
               <thead class="bg-slate-50 border-b border-slate-200 text-[11px] font-semibold uppercase text-slate-500 sticky top-0 z-10">
                 <tr>
                   <th class="py-2.5 px-3">Careoff Name</th>
@@ -666,7 +676,7 @@
           </div>
 
           <div class="overflow-x-auto rounded-xl border border-slate-200 max-h-[420px] overflow-y-auto">
-            <table class="w-full text-left border-collapse text-xs sm:text-sm">
+            <table class="w-full min-w-[560px] text-left border-collapse text-xs sm:text-sm">
               <thead class="bg-slate-50 border-b border-slate-200 text-[11px] font-semibold uppercase text-slate-500 sticky top-0 z-10">
                 <tr>
                   <th class="py-2.5 px-3">Careoff</th>
@@ -740,7 +750,7 @@
         </div>
 
         <div class="overflow-x-auto rounded-xl border border-slate-200 max-h-[520px] overflow-y-auto">
-          <table class="w-full text-left border-collapse text-xs sm:text-sm">
+          <table class="w-full min-w-[680px] text-left border-collapse text-xs sm:text-sm">
             <thead class="bg-slate-50 border-b border-slate-200 text-[11px] font-semibold uppercase text-slate-500 sticky top-0 z-10">
               <tr>
                 <th class="py-2.5 px-3">Book #</th>
@@ -766,9 +776,9 @@
     <!-- ========================================== -->
     <div id="view-requirements" class="hidden space-y-4">
       <div class="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
-        <div class="p-4 sm:p-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div class="p-4 sm:p-5 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div>
-            <div class="flex items-center gap-2">
+            <div class="flex flex-wrap items-center gap-2">
               <h2 class="font-display font-bold text-base sm:text-lg text-slatex-900">
                 Annadhanam &amp; Pooja Requirements (53 Items)
               </h2>
@@ -781,11 +791,11 @@
             </p>
           </div>
 
-          <div class="flex flex-wrap items-center gap-2">
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
             <input type="search" id="req-search" placeholder="Search English or Tamil item..."
-              class="min-h-[38px] px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-300 text-xs sm:text-sm focus:outline-none focus:bg-white focus:border-brand-700" />
+              class="w-full sm:w-56 min-h-[40px] px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-300 text-xs sm:text-sm focus:outline-none focus:bg-white focus:border-brand-700" />
             <select id="req-status-filter"
-              class="min-h-[38px] px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-300 text-xs sm:text-sm text-slate-700 focus:outline-none focus:bg-white focus:border-brand-700">
+              class="w-full sm:w-auto min-h-[40px] px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-300 text-xs sm:text-sm text-slate-700 focus:outline-none focus:bg-white focus:border-brand-700">
               <option value="ALL">All 53 Items</option>
               <option value="PENDING">Pending Only</option>
               <option value="PARTIAL">In Progress</option>
@@ -795,7 +805,7 @@
         </div>
 
         <div class="overflow-x-auto max-h-[680px] overflow-y-auto">
-          <table class="w-full text-left border-collapse">
+          <table class="w-full min-w-[680px] text-left border-collapse">
             <thead class="bg-slate-50 border-b border-slate-200 sticky top-0 z-10 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
               <tr>
                 <th class="py-3 px-4">#</th>
@@ -941,17 +951,17 @@
   </main>
 
   <!-- Mobile Bottom Navigation Bar -->
-  <nav class="md:hidden fixed bottom-0 inset-x-0 z-30 bg-white border-t border-slate-200 shadow-lg grid grid-cols-4 py-1.5 px-2" aria-label="Mobile Navigation">
-    <button type="button" data-tab="receipts" class="nav-tab flex flex-col items-center justify-center py-1 rounded-lg text-brand-800 font-semibold text-[11px] cursor-pointer">
+  <nav class="md:hidden fixed bottom-0 inset-x-0 z-30 bg-white border-t border-slate-200 shadow-lg grid grid-cols-4 py-1.5 px-1.5 gap-1" aria-label="Mobile Navigation">
+    <button type="button" data-tab="receipts" class="nav-tab min-h-[42px] flex flex-col items-center justify-center py-1 rounded-lg text-brand-800 font-semibold text-[11px] cursor-pointer">
       <span>Receipts</span>
     </button>
-    <button type="button" data-tab="dashboard" class="nav-tab flex flex-col items-center justify-center py-1 rounded-lg text-slate-500 font-medium text-[11px] cursor-pointer">
+    <button type="button" data-tab="dashboard" class="nav-tab min-h-[42px] flex flex-col items-center justify-center py-1 rounded-lg text-slate-500 font-medium text-[11px] cursor-pointer">
       <span>Dashboard</span>
     </button>
-    <button type="button" data-tab="requirements" class="nav-tab flex flex-col items-center justify-center py-1 rounded-lg text-slate-500 font-medium text-[11px] cursor-pointer">
+    <button type="button" data-tab="requirements" class="nav-tab min-h-[42px] flex flex-col items-center justify-center py-1 rounded-lg text-slate-500 font-medium text-[11px] cursor-pointer">
       <span>Items (53)</span>
     </button>
-    <button type="button" data-tab="export" class="nav-tab flex flex-col items-center justify-center py-1 rounded-lg text-slate-500 font-medium text-[11px] cursor-pointer">
+    <button type="button" data-tab="export" class="nav-tab min-h-[42px] flex flex-col items-center justify-center py-1 rounded-lg text-slate-500 font-medium text-[11px] cursor-pointer">
       <span>Sheet Sync</span>
     </button>
   </nav>
@@ -960,7 +970,7 @@
   <textarea id="clipboard-buffer" class="sr-only" aria-hidden="true" tabindex="-1"></textarea>
 
   <!-- Non-Blocking Toast Notification -->
-  <div id="toast-container" class="fixed bottom-16 md:bottom-5 right-4 z-50 pointer-events-none flex flex-col gap-2"></div>
+  <div id="toast-container" class="fixed bottom-18 md:bottom-5 left-3 right-3 sm:left-auto sm:right-4 z-50 pointer-events-none flex flex-col items-stretch sm:items-end gap-2"></div>
 
   <!-- Delete Confirmation Modal -->
   <div id="delete-modal" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
@@ -1171,8 +1181,8 @@
   </div>
 
   <!-- Google Sheets Direct API Connection Modal (No Apps Script Needed) -->
-  <div id="sheets-connect-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl border border-slate-200 max-w-lg w-full p-5 shadow-xl space-y-4">
+  <div id="sheets-connect-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl border border-slate-200 max-w-lg w-full p-4 sm:p-5 shadow-xl space-y-4 my-auto">
       <div class="flex items-center justify-between pb-3 border-b border-slate-100">
         <div>
           <h3 class="font-display font-bold text-base text-slatex-900">Connect Google Sheets (No Script Required)</h3>
@@ -2436,34 +2446,36 @@
             ].filter(Boolean);
 
             return `
-              <div class="p-4 sm:px-5 hover:bg-slate-50/80 transition flex items-start justify-between gap-3">
-                <div class="flex items-start gap-3 min-w-0">
+              <div class="p-3.5 sm:px-5 hover:bg-slate-50/80 transition flex flex-col sm:flex-row sm:items-start justify-between gap-2.5 sm:gap-3">
+                <div class="flex items-start gap-2.5 sm:gap-3 min-w-0">
                   <span class="mt-0.5 px-2 py-0.5 rounded bg-slate-100 border border-slate-200 font-mono text-xs font-bold text-slate-600 shrink-0 tabular-nums">
                     #${r.serialNo}
                   </span>
-                  <div class="min-w-0">
-                    <div class="flex flex-wrap items-center gap-2">
-                      <span class="font-display font-bold text-sm sm:text-base text-slatex-900 truncate">${escapeHTML(r.donorName)}</span>
+                  <div class="min-w-0 flex-1">
+                    <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                      <span class="font-display font-bold text-sm sm:text-base text-slatex-900 break-words">${escapeHTML(r.donorName)}</span>
                       <span class="px-2 py-0.5 rounded-full text-[11px] font-semibold border ${getModeBadgeClasses(r.mode)}">${escapeHTML(r.mode)}</span>
                     </div>
-                    <p class="text-xs text-slate-500 mt-0.5 truncate">
+                    <p class="text-xs text-slate-500 mt-0.5 break-words">
                       ${subParts.length > 0 ? subParts.join(' · ') : 'Direct contribution'}
                       ${matStr ? ` · <strong class="text-slate-800 font-medium">${escapeHTML(matStr)}</strong>` : ''}
                     </p>
-                    <div class="mt-2 flex items-center gap-3 text-xs font-semibold">
-                      <button type="button" onclick="shareReceiptWhatsApp(${r.serialNo})" class="text-emerald-700 hover:underline cursor-pointer">WhatsApp</button>
-                      <button type="button" onclick="editReceiptRow(${r.serialNo})" class="text-brand-700 hover:underline cursor-pointer">Edit</button>
-                      <button type="button" onclick="promptDeleteReceipt(${r.serialNo})" class="text-red-600 hover:underline cursor-pointer">Delete</button>
+                    <div class="mt-2 flex flex-wrap items-center gap-3 text-xs font-semibold">
+                      <button type="button" onclick="shareReceiptWhatsApp(${r.serialNo})" class="min-h-[28px] text-emerald-700 hover:underline cursor-pointer">WhatsApp</button>
+                      <button type="button" onclick="editReceiptRow(${r.serialNo})" class="min-h-[28px] text-brand-700 hover:underline cursor-pointer">Edit</button>
+                      <button type="button" onclick="promptDeleteReceipt(${r.serialNo})" class="min-h-[28px] text-red-600 hover:underline cursor-pointer">Delete</button>
                     </div>
                   </div>
                 </div>
 
-                <div class="text-right shrink-0">
+                <div class="flex sm:flex-col items-center sm:items-end justify-between sm:justify-start pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 shrink-0 gap-2">
                   <p class="font-display font-bold text-sm sm:text-base text-slatex-900 tabular-nums">
                     ${Number(r.amount) > 0 ? formatINR(r.amount) : '—'}
                   </p>
-                  <p class="font-mono text-[11px] text-slate-400 mt-0.5 tabular-nums">${toDisplayDate(r.date)}</p>
-                  <p class="font-mono text-[11px] font-semibold text-emerald-700 mt-0.5 tabular-nums">Bal ${formatINR(r.runningBalance)}</p>
+                  <div class="flex sm:flex-col items-center sm:items-end gap-2 sm:gap-0.5">
+                    <p class="font-mono text-[11px] text-slate-400 tabular-nums">${toDisplayDate(r.date)}</p>
+                    <p class="font-mono text-[11px] font-semibold text-emerald-700 tabular-nums">Bal ${formatINR(r.runningBalance)}</p>
+                  </div>
                 </div>
               </div>
             `;
@@ -3201,29 +3213,38 @@
       const inKindReceiptsCount = sourceRows.filter(r => Array.isArray(r.materials) && r.materials.length > 0).length;
       const reqPct = Math.round(((fulfilledCount + partialCount * 0.5) / 53) * 100);
 
-      document.getElementById('kpi-total-amount').textContent = formatINR(totalAmount);
-      document.getElementById('kpi-total-sub').textContent = `${sourceRows.length} receipts logged`;
+      const totalAmtEl = document.getElementById('kpi-total-amount');
+      if (totalAmtEl) totalAmtEl.textContent = formatINR(totalAmount);
+      const totalSubEl = document.getElementById('kpi-total-sub');
+      if (totalSubEl) totalSubEl.textContent = `${sourceRows.length} receipts logged`;
       const avgEl = document.getElementById('kpi-avg-gift');
       if (avgEl) avgEl.textContent = `Avg: ${formatINR(avgGift)}`;
 
-      document.getElementById('kpi-cash-amount').textContent = formatINR(cashAmount);
-      document.getElementById('kpi-cash-count').textContent = `${cashReceipts.length} cash receipts`;
+      const cashAmtEl = document.getElementById('kpi-cash-amount');
+      if (cashAmtEl) cashAmtEl.textContent = formatINR(cashAmount);
+      const cashCntEl = document.getElementById('kpi-cash-count');
+      if (cashCntEl) cashCntEl.textContent = `${cashReceipts.length} cash receipts`;
       const cashPctEl = document.getElementById('kpi-cash-pct');
       if (cashPctEl) cashPctEl.textContent = `${cashPct}%`;
 
-      document.getElementById('kpi-digital-amount').textContent = formatINR(digitalAmount);
-      document.getElementById('kpi-digital-sub').textContent = `Online: ${formatINR(onlineAmount)} · Chq: ${formatINR(chequeAmount)}`;
+      const digAmtEl = document.getElementById('kpi-digital-amount');
+      if (digAmtEl) digAmtEl.textContent = formatINR(digitalAmount);
+      const digSubEl = document.getElementById('kpi-digital-sub');
+      if (digSubEl) digSubEl.textContent = `Online: ${formatINR(onlineAmount)} · Chq: ${formatINR(chequeAmount)}`;
       const digPctEl = document.getElementById('kpi-digital-pct');
       if (digPctEl) digPctEl.textContent = `${digitalPct}%`;
 
-      document.getElementById('kpi-materials-status').textContent = `${fulfilledCount + partialCount} / 53`;
-      document.getElementById('kpi-materials-sub').textContent = `${inKindReceiptsCount} material contributions`;
+      const matStatEl = document.getElementById('kpi-materials-status');
+      if (matStatEl) matStatEl.textContent = `${fulfilledCount + partialCount} / 53`;
+      const matSubEl = document.getElementById('kpi-materials-sub');
+      if (matSubEl) matSubEl.textContent = `${inKindReceiptsCount} material contributions`;
       const reqPctEl = document.getElementById('kpi-req-pct');
       if (reqPctEl) reqPctEl.textContent = `${reqPct}% active`;
 
-      const editSerial = document.getElementById('edit-serial-no').value;
-      if (!editSerial) {
-        document.getElementById('next-serial-badge').textContent = 'Auto on Save';
+      const editSerial = document.getElementById('edit-serial-no')?.value;
+      const serialBadgeEl = document.getElementById('next-serial-badge');
+      if (!editSerial && serialBadgeEl) {
+        serialBadgeEl.textContent = 'Auto on Save';
       }
     }
 
