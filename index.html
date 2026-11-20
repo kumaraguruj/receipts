@@ -2526,26 +2526,33 @@
 
     function updateWhatsAppSetupBadge() {
       const cfg = getWhatsAppConfig();
-      const labelEl = document.getElementById('wa-setup-label');
-      if (!labelEl) return;
+      const dot = document.getElementById('wa-setup-dot');
+      const label = document.getElementById('wa-setup-label');
+      if (!dot || !label) return;
+
       if (cfg.mode === 'cloud_api' && cfg.phoneId && cfg.accessToken) {
-        labelEl.textContent = 'WhatsApp Setup (Cloud API Active)';
+        dot.className = 'w-1.5 h-1.5 rounded-full bg-blue-600';
+        label.textContent = 'WhatsApp Setup (Meta Cloud API)';
       } else if (cfg.mode === 'webhook' && cfg.webhookUrl) {
-        labelEl.textContent = 'WhatsApp Setup (Gateway Active)';
+        dot.className = 'w-1.5 h-1.5 rounded-full bg-purple-600';
+        label.textContent = 'WhatsApp Setup (Gateway)';
       } else {
-        labelEl.textContent = 'WhatsApp Setup (Direct App)';
+        dot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-600';
+        label.textContent = 'WhatsApp Setup (Direct App)';
       }
     }
 
     function selectWhatsAppMode(mode) {
-      document.getElementById('wa-delivery-mode').value = mode;
+      const hidden = document.getElementById('wa-delivery-mode');
+      if (hidden) hidden.value = mode;
+
       ['deeplink', 'cloud_api', 'webhook'].forEach(m => {
         const btn = document.getElementById(`wa-mode-btn-${m}`);
         const panel = document.getElementById(`wa-panel-${m}`);
         const active = m === mode;
         if (btn) {
           btn.className = active
-            ? 'p-2.5 rounded-xl border text-left transition cursor-pointer bg-emerald-50 border-emerald-500 text-emerald-950 shadow-2xs'
+            ? 'p-2.5 rounded-xl border text-left transition cursor-pointer bg-emerald-50 border-emerald-500 text-emerald-950'
             : 'p-2.5 rounded-xl border text-left transition cursor-pointer bg-white border-slate-200 text-slate-700 hover:bg-slate-50';
         }
         if (panel) {
@@ -2554,46 +2561,89 @@
       });
     }
 
+    function openWhatsAppDeeplinkSafely(phone10, msg) {
+      const cleanPhone = String(phone10 || '').replace(/\D/g, '').slice(-10);
+      const waUrl = cleanPhone.length === 10
+        ? `https://api.whatsapp.com/send?phone=91${cleanPhone}&text=${encodeURIComponent(msg)}`
+        : `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+
+      const win = window.open(waUrl, '_blank', 'noopener,noreferrer');
+      if (!win || win.closed || typeof win.closed === 'undefined') {
+        // Browser popup blocker blocked async window.open — show clickable toast fallback
+        const container = document.getElementById('toast-container');
+        if (container) {
+          const el = document.createElement('div');
+          el.className = 'pointer-events-auto px-4 py-3 rounded-xl border border-emerald-700 bg-emerald-800 text-white shadow-xl text-xs sm:text-sm font-semibold flex items-center gap-3';
+          el.innerHTML = `<span>Popup blocked by browser.</span><a href="${waUrl}" target="_blank" rel="noopener noreferrer" class="underline font-bold bg-white text-emerald-900 px-2.5 py-1 rounded-lg">Open WhatsApp &#8599;</a>`;
+          container.appendChild(el);
+          setTimeout(() => el.remove(), 8000);
+        }
+      }
+    }
+
     async function dispatchWhatsAppAutomated(phone10, msg, receiptObj = {}) {
       const cfg = getWhatsAppConfig();
-      if (cfg.mode === 'cloud_api' && cfg.phoneId && cfg.accessToken) {
-        const payload = cfg.templateName
-          ? {
+      const cleanPhoneId = String(cfg.phoneId || '').replace(/\D/g, '');
+      const cleanToken = String(cfg.accessToken || '').trim().replace(/^Bearer\s+/i, '');
+      const cleanTemplate = String(cfg.templateName || '').trim();
+
+      if (cfg.mode === 'cloud_api' && cleanPhoneId && cleanToken) {
+        let payload;
+        if (cleanTemplate) {
+          if (cleanTemplate.toLowerCase() === 'hello_world') {
+            payload = {
               messaging_product: 'whatsapp',
               to: `91${phone10}`,
               type: 'template',
               template: {
-                name: cfg.templateName,
+                name: 'hello_world',
+                language: { code: 'en_US' }
+              }
+            };
+          } else {
+            const param1 = String(receiptObj.donorName || 'Devotee').replace(/[\r\n\t]+/g, ' ').trim();
+            const param2 = String(receiptObj.receiptNo || receiptObj.serialNo || '001').replace(/[\r\n\t]+/g, ' ').trim();
+            payload = {
+              messaging_product: 'whatsapp',
+              to: `91${phone10}`,
+              type: 'template',
+              template: {
+                name: cleanTemplate,
                 language: { code: 'en' },
                 components: [
                   {
                     type: 'body',
                     parameters: [
-                      { type: 'text', text: receiptObj.donorName || 'Devotee' },
-                      { type: 'text', text: receiptObj.receiptNo || String(receiptObj.serialNo || '001') }
+                      { type: 'text', text: param1 },
+                      { type: 'text', text: param2 }
                     ]
                   }
                 ]
               }
-            }
-          : {
-              messaging_product: 'whatsapp',
-              to: `91${phone10}`,
-              type: 'text',
-              text: { body: msg }
             };
+          }
+        } else {
+          payload = {
+            messaging_product: 'whatsapp',
+            recipient_type: 'individual',
+            to: `91${phone10}`,
+            type: 'text',
+            text: { preview_url: false, body: msg }
+          };
+        }
 
-        const res = await fetch(`https://graph.facebook.com/v19.0/${cfg.phoneId}/messages`, {
+        const res = await fetch(`https://graph.facebook.com/v21.0/${cleanPhoneId}/messages`, {
           method: 'POST',
           headers: {
-            Authorization: `Bearer ${cfg.accessToken}`,
+            Authorization: `Bearer ${cleanToken}`,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify(payload)
         });
+        const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-          const errData = await res.json().catch(() => ({}));
-          throw new Error(errData.error?.message || `HTTP ${res.status}`);
+          const errMsg = data.error?.error_user_msg || data.error?.message || `HTTP ${res.status}`;
+          throw new Error(errMsg);
         }
         return true;
       }
@@ -2601,9 +2651,9 @@
       if (cfg.mode === 'webhook' && cfg.webhookUrl) {
         const headers = { 'Content-Type': 'application/json' };
         if (cfg.webhookToken) {
-          headers['Authorization'] = `Bearer ${cfg.webhookToken}`;
+          headers['Authorization'] = `Bearer ${cfg.webhookToken.trim()}`;
         }
-        const res = await fetch(cfg.webhookUrl, {
+        const res = await fetch(cfg.webhookUrl.trim(), {
           method: 'POST',
           headers,
           body: JSON.stringify({
@@ -2635,11 +2685,10 @@
             showToast(`WhatsApp thank-you sent automatically to +91 ${phone}!`);
             return;
           } catch (err) {
-            showToast(`Auto-send failed (${err.message}) — opening WhatsApp directly.`, 'info');
+            showToast(`Cloud API Error: ${err.message} — opening WhatsApp app instead.`, 'error');
           }
         }
-        const waUrl = `https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`;
-        window.open(waUrl, '_blank', 'noopener');
+        openWhatsAppDeeplinkSafely(phone, msg);
         return;
       }
 
@@ -2677,10 +2726,7 @@
     function launchWhatsAppFromModal() {
       const rawPhone = document.getElementById('wa-modal-phone').value.replace(/\D/g, '').slice(-10);
       const msg = document.getElementById('wa-modal-message').value;
-      const waUrl = rawPhone.length === 10
-        ? `https://wa.me/91${rawPhone}?text=${encodeURIComponent(msg)}`
-        : `https://wa.me/?text=${encodeURIComponent(msg)}`;
-      window.open(waUrl, '_blank', 'noopener');
+      openWhatsAppDeeplinkSafely(rawPhone, msg);
       closeWhatsAppModal();
     }
 
@@ -2752,7 +2798,7 @@
       const testMsg = buildWhatsAppThanksText(testSample);
 
       if (mode === 'deeplink') {
-        window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(testMsg)}`, '_blank', 'noopener');
+        openWhatsAppDeeplinkSafely(phone, testMsg);
         showToast(`Opened WhatsApp test chat for +91 ${phone}!`);
         return;
       }
