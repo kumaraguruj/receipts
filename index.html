@@ -1891,6 +1891,12 @@
           } catch (err) {
             gsIsWriting = false;
             showToast(`Direct Sheet Save failed: ${err.message}`, 'error');
+            resolve(null);
+          }
+        });
+      });
+    }
+
     async function repairSwappedSheetColumns() {
       await pullFromGoogleSheet(false, false);
       await pushAllToGoogleSheet(false);
