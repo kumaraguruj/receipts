@@ -399,8 +399,8 @@
                 <th class="py-2.5 px-3">D &middot; Donor Name</th>
                 <th class="py-2.5 px-3">E &middot; Careoff</th>
                 <th class="py-2.5 px-3">F &middot; Phone</th>
-                <th class="py-2.5 px-3 text-right">G &middot; Amount</th>
-                <th class="py-2.5 px-3">H &middot; Mode</th>
+                <th class="py-2.5 px-3">G &middot; Mode</th>
+                <th class="py-2.5 px-3 text-right">H &middot; Amount</th>
                 <th class="py-2.5 px-3">I &middot; Materials</th>
                 <th class="py-2.5 px-3 text-right">J &middot; Balance</th>
                 <th class="py-2.5 px-3 text-right">Actions</th>
@@ -842,6 +842,11 @@
             <button type="button" onclick="pullFromGoogleSheet()"
               class="px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-semibold shadow-xs transition cursor-pointer">
               &#8635; Read from Sheet
+            </button>
+            <button type="button" onclick="repairSwappedSheetColumns()"
+              class="px-3.5 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs sm:text-sm font-semibold shadow-xs transition cursor-pointer"
+              title="Fixes existing rows in Google Sheets where Mode and Amount were swapped">
+              Fix Swapped G &amp; H in Sheet
             </button>
             <button type="button" onclick="pushAllToGoogleSheet()"
               class="px-3.5 py-2 rounded-lg bg-brand-800 hover:bg-brand-700 text-white text-xs sm:text-sm font-semibold shadow-xs transition cursor-pointer">
@@ -1678,18 +1683,29 @@
         }
 
         const parsed = rows
-          .filter(r => r && (r[3] || r[6] || r[8]))
-          .map((r, idx) => ({
-            serialNo: parseInt(r[0], 10) || (idx + 1),
-            receiptNo: String(r[1] || '').trim(),
-            date: parseSheetDateToISO(r[2]),
-            donorName: String(r[3] || '').trim() || 'Donor',
-            careOf: String(r[4] || '').trim(),
-            phoneNo: String(r[5] || '').replace(/\D/g, '').slice(-10),
-            mode: String(r[6] || 'Cash').trim() || 'Cash',
-            amount: parseFloat(String(r[7] || '0').replace(/[^0-9.]/g, '')) || 0,
-            materials: parseSheetMaterialsString(r[8])
-          }));
+          .filter(r => r && (r[3] || r[6] || r[7] || r[8]))
+          .map((r, idx) => {
+            const colG = String(r[6] || '').trim();
+            const colH = String(r[7] || '').trim();
+            const knownModes = ['cash', 'online', 'cheque', 'annadhanam', 'pooja items'];
+
+            // Detect if G and H were previously swapped in the Google Sheet (e.g., G has amount/blank and H has 'Cash')
+            const isSwapped = knownModes.includes(colH.toLowerCase()) && !knownModes.includes(colG.toLowerCase());
+            const rawMode = isSwapped ? colH : (colG || 'Cash');
+            const rawAmt = isSwapped ? colG : colH;
+
+            return {
+              serialNo: parseInt(r[0], 10) || (idx + 1),
+              receiptNo: String(r[1] || '').trim(),
+              date: parseSheetDateToISO(r[2]),
+              donorName: String(r[3] || '').trim() || 'Donor',
+              careOf: String(r[4] || '').trim(),
+              phoneNo: String(r[5] || '').replace(/\D/g, '').slice(-10),
+              mode: rawMode || 'Cash',
+              amount: parseFloat(String(rawAmt || '0').replace(/[^0-9.]/g, '')) || 0,
+              materials: parseSheetMaterialsString(r[8])
+            };
+          });
 
         const nextNormalized = normalizeReceiptsData(parsed);
         const prevSerialized = JSON.stringify(receipts);
@@ -1815,10 +1831,15 @@
             // Identify the last row number & last running balance directly from Google Sheets
             let lastRowNo = 0;
             let runningBal = 0;
+            const knownModes = ['cash', 'online', 'cheque', 'annadhanam', 'pooja items'];
             existingSheetRows.forEach((r, idx) => {
               const parsedSNo = parseInt(r[0], 10);
               lastRowNo = Math.max(lastRowNo, !isNaN(parsedSNo) ? parsedSNo : (idx + 1));
-              const rowAmt = parseFloat(String(r[7] || '0').replace(/[^0-9.-]/g, '')) || 0;
+              const colG = String(r[6] || '').trim();
+              const colH = String(r[7] || '').trim();
+              const isSwapped = knownModes.includes(colH.toLowerCase()) && !knownModes.includes(colG.toLowerCase());
+              const rawAmt = isSwapped ? colG : colH;
+              const rowAmt = parseFloat(String(rawAmt || '0').replace(/[^0-9.-]/g, '')) || 0;
               runningBal += rowAmt;
             });
 
@@ -1870,10 +1891,10 @@
           } catch (err) {
             gsIsWriting = false;
             showToast(`Direct Sheet Save failed: ${err.message}`, 'error');
-            resolve(null);
-          }
-        });
-      });
+    async function repairSwappedSheetColumns() {
+      await pullFromGoogleSheet(false, false);
+      await pushAllToGoogleSheet(false);
+      showToast('Repaired swapped Mode (G) & Amount (H) columns in Google Sheets!');
     }
 
     function maybeAutoPushToGoogleSheet() {
@@ -2450,8 +2471,8 @@
             <td class="py-2.5 px-3 font-semibold text-slatex-900">${escapeHTML(r.donorName)}</td>
             <td class="py-2.5 px-3 text-slate-600">${escapeHTML(r.careOf || '—')}</td>
             <td class="py-2.5 px-3 font-mono text-xs text-slate-600 tabular-nums">${escapeHTML(r.phoneNo || '—')}</td>
-            <td class="py-2.5 px-3 text-right font-semibold text-slatex-900 tabular-nums">${Number(r.amount) > 0 ? formatINR(r.amount) : '—'}</td>
             <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded-full text-[11px] font-semibold border ${getModeBadgeClasses(r.mode)}">${escapeHTML(r.mode)}</span></td>
+            <td class="py-2.5 px-3 text-right font-semibold text-slatex-900 tabular-nums">${Number(r.amount) > 0 ? formatINR(r.amount) : '—'}</td>
             <td class="py-2.5 px-3 text-xs text-slate-700">${escapeHTML(formatMaterialsString(r.materials) || '—')}</td>
             <td class="py-2.5 px-3 text-right font-mono text-xs font-semibold text-emerald-700 tabular-nums">${formatINR(r.runningBalance)}</td>
             <td class="py-2.5 px-3 text-right whitespace-nowrap space-x-2 text-xs font-semibold">
@@ -3818,6 +3839,7 @@
     // Expose all inline HTML event handlers cleanly on window
     Object.assign(window, {
       saveToGoogleSheetOnClick,
+      repairSwappedSheetColumns,
       openSheetsConnectModal,
       copyDetectedOrigin,
       closeSheetsConnectModal,
