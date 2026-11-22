@@ -412,7 +412,7 @@
         <div id="register-feed-container" class="divide-y divide-slate-200 max-h-[620px] overflow-y-auto"></div>
         <!-- Mode B: Full Spreadsheet Table View -->
         <div id="register-table-container" class="hidden overflow-x-auto max-h-[620px] overflow-y-auto">
-          <table class="w-full min-w-[880px] text-left border-collapse">
+          <table class="w-full min-w-[920px] text-left border-collapse">
             <thead class="bg-slate-50 border-b border-slate-200 sticky top-0 z-10 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
               <tr>
                 <th class="py-2.5 px-3">A &middot; S.No</th>
@@ -420,12 +420,12 @@
                 <th class="py-2.5 px-3">C &middot; Date</th>
                 <th class="py-2.5 px-3">D &middot; Donor Name</th>
                 <th class="py-2.5 px-3">E &middot; Careoff</th>
-                <th class="py-2.5 px-3">F &middot; Phone</th>
-                <th class="py-2.5 px-3">G &middot; Mode</th>
-                <th class="py-2.5 px-3 text-right">H &middot; Amount</th>
-                <th class="py-2.5 px-3">I &middot; Materials</th>
-                <th class="py-2.5 px-3 text-right">J &middot; Balance</th>
-                <th class="py-2.5 px-3">K &middot; Address</th>
+                <th class="py-2.5 px-3">F &middot; Address</th>
+                <th class="py-2.5 px-3">G &middot; Phone</th>
+                <th class="py-2.5 px-3">H &middot; Mode</th>
+                <th class="py-2.5 px-3 text-right">I &middot; Amount</th>
+                <th class="py-2.5 px-3">J &middot; Materials</th>
+                <th class="py-2.5 px-3 text-right">K &middot; Balance</th>
                 <th class="py-2.5 px-3 text-right">Actions</th>
               </tr>
             </thead>
@@ -1561,8 +1561,73 @@
       const rangeEl = document.getElementById('sync-summary-range');
       const autoEl = document.getElementById('sync-summary-autosync');
       if (idEl) idEl.textContent = cfg.spreadsheetId || 'Not set';
-      if (rangeEl) rangeEl.textContent = `${cfg.sheetName || 'Receipts'}!A2:K`;
+      if (rangeEl) rangeEl.textContent = `${cfg.sheetName || 'Receipts'}!A1:K`;
       if (autoEl) autoEl.textContent = isSignedIn ? 'Pulling every 5s + Instant Write' : (cfg.autoSync ? 'Enabled (Pulls every 5s once signed in)' : 'Manual Read/Write only');
+    }
+
+    // Header-aware column index map (defaults to A:Serial, B:Receipt, C:Date, D:Donor, E:Careoff, F:Address, G:Phone, H:Mode, I:Amount, J:Materials, K:Balance)
+    let gsColumnMap = {
+      serialNo: 0,
+      receiptNo: 1,
+      date: 2,
+      donorName: 3,
+      careOf: 4,
+      address: 5,
+      phoneNo: 6,
+      mode: 7,
+      amount: 8,
+      materials: 9,
+      balance: 10
+    };
+
+    function detectSheetColumnMap(headerRow) {
+      const map = {
+        serialNo: 0,
+        receiptNo: 1,
+        date: 2,
+        donorName: 3,
+        careOf: 4,
+        address: 5,
+        phoneNo: 6,
+        mode: 7,
+        amount: 8,
+        materials: 9,
+        balance: 10
+      };
+      if (!Array.isArray(headerRow) || headerRow.length === 0) return map;
+
+      headerRow.forEach((cell, idx) => {
+        const h = String(cell || '').trim().toLowerCase();
+        if (!h) return;
+        if (h.includes('serial') || h === 's.no' || h === 'sno') map.serialNo = idx;
+        else if (h.includes('receipt') || h === 'rcpt') map.receiptNo = idx;
+        else if (h === 'date') map.date = idx;
+        else if (h.includes('donor') || h === 'name') map.donorName = idx;
+        else if (h.includes('care')) map.careOf = idx;
+        else if (h.includes('addr')) map.address = idx;
+        else if (h.includes('phone') || h.includes('mobile')) map.phoneNo = idx;
+        else if (h === 'mode' || h.includes('payment')) map.mode = idx;
+        else if (h === 'amount' || h === 'amt') map.amount = idx;
+        else if (h.includes('material') || h.includes('item')) map.materials = idx;
+        else if (h.includes('running') || h.includes('bal')) map.balance = idx;
+      });
+      return map;
+    }
+
+    function buildSheetRowFromReceipt(r, runningBalance, colMap = gsColumnMap) {
+      const row = new Array(11).fill('');
+      row[colMap.serialNo] = r.serialNo;
+      row[colMap.receiptNo] = r.receiptNo || '';
+      row[colMap.date] = toDisplayDate(r.date);
+      row[colMap.donorName] = r.donorName || '';
+      row[colMap.careOf] = r.careOf || '';
+      row[colMap.address] = r.address || '';
+      row[colMap.phoneNo] = r.phoneNo || '';
+      row[colMap.mode] = r.mode || 'Cash';
+      row[colMap.amount] = Number(r.amount) > 0 ? Number(r.amount) : '';
+      row[colMap.materials] = formatMaterialsString(r.materials);
+      row[colMap.balance] = runningBalance;
+      return row;
     }
 
     function openSheetsConnectModal() {
@@ -1688,7 +1753,7 @@
       if (gsIsPulling || gsIsWriting) return;
       gsIsPulling = true;
       try {
-        const range = encodeURIComponent(`${cfg.sheetName || 'Receipts'}!A2:K`);
+        const range = encodeURIComponent(`${cfg.sheetName || 'Receipts'}!A1:K`);
         const url = `https://sheets.googleapis.com/v4/spreadsheets/${cfg.spreadsheetId}/values/${range}`;
         const res = await fetch(url, {
           headers: { Authorization: `Bearer ${token}` }
@@ -1703,36 +1768,68 @@
           throw new Error(err.error?.message || `HTTP ${res.status}`);
         }
         const data = await res.json();
-        const rows = data.values || [];
-        if (rows.length === 0) {
+        const allValues = data.values || [];
+        if (allValues.length === 0) {
           if (!silentIfEmpty && !isBackgroundPoll) {
-            showToast('Sheet is currently empty (rows A2:K). Click Write Sheet to upload.', 'info');
+            showToast('Sheet is currently empty. Click Write Sheet to upload.', 'info');
           }
           return;
         }
 
+        const firstRowStr = (allValues[0] || []).join(' ').toLowerCase();
+        const hasHeaderRow = firstRowStr.includes('donor') || firstRowStr.includes('serial') || firstRowStr.includes('mode');
+        if (hasHeaderRow) {
+          gsColumnMap = detectSheetColumnMap(allValues[0]);
+        }
+        const rows = hasHeaderRow ? allValues.slice(1) : allValues;
+
+        if (rows.length === 0) {
+          if (!silentIfEmpty && !isBackgroundPoll) {
+            showToast('Sheet has headers only (rows A2:K empty). Click Write Sheet to upload.', 'info');
+          }
+          return;
+        }
+
+        const knownModes = ['cash', 'online', 'cheque', 'annadhanam', 'pooja items'];
         const parsed = rows
-          .filter(r => r && (r[3] || r[6] || r[7] || r[8]))
+          .filter(r => r && (r[gsColumnMap.donorName] || r[gsColumnMap.mode] || r[gsColumnMap.amount] || r[gsColumnMap.materials]))
           .map((r, idx) => {
+            let rawMode = String(r[gsColumnMap.mode] || '').trim();
+            let rawAmt = String(r[gsColumnMap.amount] || '').trim();
+            let rawPhone = String(r[gsColumnMap.phoneNo] || '').trim();
+            let rawAddr = String(r[gsColumnMap.address] || '').trim();
+            let rawMat = String(r[gsColumnMap.materials] || '').trim();
+
+            // Safety fallback if a sheet has Phone at F (5) and Mode at G (6) instead of Address at F (5)
+            const colF = String(r[5] || '').trim();
             const colG = String(r[6] || '').trim();
             const colH = String(r[7] || '').trim();
-            const knownModes = ['cash', 'online', 'cheque', 'annadhanam', 'pooja items'];
+            if (!hasHeaderRow && knownModes.includes(colG.toLowerCase()) && !knownModes.includes(colH.toLowerCase())) {
+              rawPhone = colF;
+              rawMode = colG;
+              rawAmt = colH;
+              rawMat = String(r[8] || '').trim();
+              rawAddr = String(r[10] || '').trim();
+            } else if (knownModes.includes(rawAmt.toLowerCase()) && !knownModes.includes(rawMode.toLowerCase())) {
+              const tmp = rawMode;
+              rawMode = rawAmt;
+              rawAmt = tmp;
+            }
 
-            const isSwapped = knownModes.includes(colH.toLowerCase()) && !knownModes.includes(colG.toLowerCase());
-            const rawMode = isSwapped ? colH : (colG || 'Cash');
-            const rawAmt = isSwapped ? colG : colH;
+            const cleanPhoneDigits = rawPhone.replace(/\D/g, '');
+            const validPhone = cleanPhoneDigits.length >= 10 ? cleanPhoneDigits.slice(-10) : '';
 
             return {
-              serialNo: parseInt(r[0], 10) || (idx + 1),
-              receiptNo: String(r[1] || '').trim(),
-              date: parseSheetDateToISO(r[2]),
-              donorName: String(r[3] || '').trim() || 'Donor',
-              careOf: String(r[4] || '').trim(),
-              phoneNo: String(r[5] || '').replace(/\D/g, '').slice(-10),
+              serialNo: parseInt(r[gsColumnMap.serialNo], 10) || (idx + 1),
+              receiptNo: String(r[gsColumnMap.receiptNo] || '').trim(),
+              date: parseSheetDateToISO(r[gsColumnMap.date]),
+              donorName: String(r[gsColumnMap.donorName] || '').trim() || 'Donor',
+              careOf: String(r[gsColumnMap.careOf] || '').trim(),
+              address: rawAddr,
+              phoneNo: validPhone,
               mode: rawMode || 'Cash',
               amount: parseFloat(String(rawAmt || '0').replace(/[^0-9.]/g, '')) || 0,
-              materials: parseSheetMaterialsString(r[8]),
-              address: String(r[10] || '').trim()
+              materials: parseSheetMaterialsString(rawMat)
             };
           });
 
@@ -1795,6 +1892,16 @@
         gsIsWriting = true;
         try {
           const sheetTab = cfg.sheetName || 'Receipts';
+          const headerRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${cfg.spreadsheetId}/values/${encodeURIComponent(`${sheetTab}!A1:K1`)}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (headerRes.ok) {
+            const hData = await headerRes.json();
+            if (hData.values && hData.values[0]) {
+              gsColumnMap = detectSheetColumnMap(hData.values[0]);
+            }
+          }
+
           const clearRange = encodeURIComponent(`${sheetTab}!A2:K1000`);
           await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${cfg.spreadsheetId}/values/${clearRange}:clear`, {
             method: 'POST',
@@ -1803,19 +1910,7 @@
 
           const rowsWithBal = getReceiptsWithRunningBalance();
           if (rowsWithBal.length > 0) {
-            const values = rowsWithBal.map(r => [
-              r.serialNo,
-              r.receiptNo || '',
-              toDisplayDate(r.date),
-              r.donorName || '',
-              r.careOf || '',
-              r.phoneNo || '',
-              r.mode || 'Cash',
-              Number(r.amount) > 0 ? Number(r.amount) : '',
-              formatMaterialsString(r.materials),
-              r.runningBalance,
-              r.address || ''
-            ]);
+            const values = rowsWithBal.map(r => buildSheetRowFromReceipt(r, r.runningBalance, gsColumnMap));
 
             const writeRange = encodeURIComponent(`${sheetTab}!A2:K${values.length + 1}`);
             const writeUrl = `https://sheets.googleapis.com/v4/spreadsheets/${cfg.spreadsheetId}/values/${writeRange}?valueInputOption=USER_ENTERED`;
@@ -1850,7 +1945,7 @@
           gsIsWriting = true;
           try {
             const sheetTab = cfg.sheetName || 'Receipts';
-            const readRange = encodeURIComponent(`${sheetTab}!A2:K`);
+            const readRange = encodeURIComponent(`${sheetTab}!A1:K`);
             const readRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${cfg.spreadsheetId}/values/${readRange}`, {
               headers: { Authorization: `Bearer ${token}` }
             });
@@ -1859,20 +1954,23 @@
               throw new Error(err.error?.message || `HTTP ${readRes.status}`);
             }
             const readData = await readRes.json();
-            const existingSheetRows = (readData.values || []).filter(r => r && (r[0] || r[3] || r[6] || r[7] || r[8]));
+            const allValues = readData.values || [];
+            const firstRowStr = (allValues[0] || []).join(' ').toLowerCase();
+            const hasHeaderRow = firstRowStr.includes('donor') || firstRowStr.includes('serial') || firstRowStr.includes('mode');
+            if (hasHeaderRow) {
+              gsColumnMap = detectSheetColumnMap(allValues[0]);
+            }
+            const existingSheetRows = (hasHeaderRow ? allValues.slice(1) : allValues)
+              .filter(r => r && (r[gsColumnMap.serialNo] || r[gsColumnMap.donorName] || r[gsColumnMap.mode] || r[gsColumnMap.amount] || r[gsColumnMap.materials]));
 
             let lastSheetRowNo = 0;
             let lastRunningBal = 0;
             existingSheetRows.forEach((r, idx) => {
-              const sNo = parseInt(r[0], 10) || (idx + 1);
+              const sNo = parseInt(r[gsColumnMap.serialNo], 10) || (idx + 1);
               if (sNo > lastSheetRowNo) lastSheetRowNo = sNo;
 
-              const colG = String(r[6] || '').trim();
-              const colH = String(r[7] || '').trim();
-              const knownModes = ['cash', 'online', 'cheque', 'annadhanam', 'pooja items'];
-              const isSwapped = knownModes.includes(colH.toLowerCase()) && !knownModes.includes(colG.toLowerCase());
-              const rawAmt = isSwapped ? colG : colH;
-              const rowAmt = parseFloat(String(rawAmt || '0').replace(/[^0-9.]/g, '')) || 0;
+              const rawAmt = String(r[gsColumnMap.amount] || '0').trim();
+              const rowAmt = parseFloat(rawAmt.replace(/[^0-9.]/g, '')) || 0;
               lastRunningBal += rowAmt;
             });
 
@@ -1886,19 +1984,7 @@
               };
             });
 
-            const valuesToAppend = assignedRows.map(r => [
-              r.serialNo,
-              r.receiptNo || '',
-              toDisplayDate(r.date),
-              r.donorName || '',
-              r.careOf || '',
-              r.phoneNo || '',
-              r.mode || 'Cash',
-              Number(r.amount) > 0 ? Number(r.amount) : '',
-              formatMaterialsString(r.materials),
-              r.runningBalance,
-              r.address || ''
-            ]);
+            const valuesToAppend = assignedRows.map(r => buildSheetRowFromReceipt(r, r.runningBalance, gsColumnMap));
 
             const appendRange = encodeURIComponent(`${sheetTab}!A2:K`);
             const appendUrl = `https://sheets.googleapis.com/v4/spreadsheets/${cfg.spreadsheetId}/values/${appendRange}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
@@ -2876,12 +2962,12 @@
             <td class="py-2.5 px-3 font-mono text-xs text-slate-600 whitespace-nowrap tabular-nums">${toDisplayDate(r.date)}</td>
             <td class="py-2.5 px-3 font-semibold text-slatex-900">${escapeHTML(r.donorName)}</td>
             <td class="py-2.5 px-3 text-slate-600">${escapeHTML(r.careOf || '—')}</td>
+            <td class="py-2.5 px-3 text-xs text-slate-600 max-w-[180px] truncate" title="${escapeHTML(r.address || '')}">${escapeHTML(r.address || '—')}</td>
             <td class="py-2.5 px-3 font-mono text-xs text-slate-600 tabular-nums">${escapeHTML(r.phoneNo || '—')}</td>
             <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded-full text-[11px] font-semibold border ${getModeBadgeClasses(r.mode)}">${escapeHTML(r.mode)}</span></td>
             <td class="py-2.5 px-3 text-right font-semibold text-slatex-900 tabular-nums">${Number(r.amount) > 0 ? formatINR(r.amount) : '—'}</td>
             <td class="py-2.5 px-3 text-xs text-slate-700">${escapeHTML(formatMaterialsString(r.materials) || '—')}</td>
             <td class="py-2.5 px-3 text-right font-mono text-xs font-semibold text-emerald-700 tabular-nums">${formatINR(r.runningBalance)}</td>
-            <td class="py-2.5 px-3 text-xs text-slate-600 max-w-[180px] truncate" title="${escapeHTML(r.address || '')}">${escapeHTML(r.address || '—')}</td>
             <td class="py-2.5 px-3 text-right whitespace-nowrap space-x-2 text-xs font-semibold">
               <button type="button" onclick="shareReceiptWhatsApp(${r.serialNo})" class="text-emerald-700 hover:underline cursor-pointer">WA</button>
               <button type="button" onclick="editReceiptRow(${r.serialNo})" class="text-brand-700 hover:underline cursor-pointer">Edit</button>
@@ -3515,12 +3601,12 @@
         ['SRI AYYAPPA SWAMI SEVA SANGAM — RECEIPTS 2026 DASHBOARD', '', '', '', '', '', ''],
         ['', '', '', '', '', '', ''],
         ['EXECUTIVE KPI SUMMARY', 'Formula Value', 'Notes', '', 'PAYMENT MODE SUMMARY', 'Receipts', 'Amount (₹)'],
-        ['Total Cash Collection', '=SUM(Receipts!H2:H)', 'Running total from Receipts!H', '', 'Cash', '=COUNTIF(Receipts!G2:G, "Cash")', '=SUMIF(Receipts!G2:G, "Cash", Receipts!H2:H)'],
-        ['Total Receipts Logged', '=COUNTA(Receipts!D2:D)', 'Count of donor entries', '', 'Online', '=COUNTIF(Receipts!G2:G, "Online")', '=SUMIF(Receipts!G2:G, "Online", Receipts!H2:H)'],
-        ['Cash In Hand', '=SUMIF(Receipts!G2:G, "Cash", Receipts!H2:H)', 'Physical cash collected', '', 'Cheque', '=COUNTIF(Receipts!G2:G, "Cheque")', '=SUMIF(Receipts!G2:G, "Cheque", Receipts!H2:H)'],
-        ['Online + Cheque', '=SUMIF(Receipts!G2:G, "Online", Receipts!H2:H)+SUMIF(Receipts!G2:G, "Cheque", Receipts!H2:H)', 'Bank & UPI receipts', '', 'Annadhanam', '=COUNTIF(Receipts!G2:G, "Annadhanam")', '=SUMIF(Receipts!G2:G, "Annadhanam", Receipts!H2:H)'],
-        ['In-Kind Material Entries', '=COUNTA(Receipts!I2:I)', 'Rows with materials in Col I', '', 'Pooja Items', '=COUNTIF(Receipts!G2:G, "Pooja Items")', '=SUMIF(Receipts!G2:G, "Pooja Items", Receipts!H2:H)'],
-        ['Average Monetary Gift', '=IFERROR(AVERAGEIF(Receipts!H2:H, ">0"), 0)', 'Average per cash/online receipt', '', 'GRAND TOTAL', '=SUM(F4:F8)', '=SUM(G4:G8)'],
+        ['Total Cash Collection', '=SUM(Receipts!I2:I)', 'Running total from Receipts!I', '', 'Cash', '=COUNTIF(Receipts!H2:H, "Cash")', '=SUMIF(Receipts!H2:H, "Cash", Receipts!I2:I)'],
+        ['Total Receipts Logged', '=COUNTA(Receipts!D2:D)', 'Count of donor entries', '', 'Online', '=COUNTIF(Receipts!H2:H, "Online")', '=SUMIF(Receipts!H2:H, "Online", Receipts!I2:I)'],
+        ['Cash In Hand', '=SUMIF(Receipts!H2:H, "Cash", Receipts!I2:I)', 'Physical cash collected', '', 'Cheque', '=COUNTIF(Receipts!H2:H, "Cheque")', '=SUMIF(Receipts!H2:H, "Cheque", Receipts!I2:I)'],
+        ['Online + Cheque', '=SUMIF(Receipts!H2:H, "Online", Receipts!I2:I)+SUMIF(Receipts!H2:H, "Cheque", Receipts!I2:I)', 'Bank & UPI receipts', '', 'Annadhanam', '=COUNTIF(Receipts!H2:H, "Annadhanam")', '=SUMIF(Receipts!H2:H, "Annadhanam", Receipts!I2:I)'],
+        ['In-Kind Material Entries', '=COUNTA(Receipts!J2:J)', 'Rows with materials in Col J', '', 'Pooja Items', '=COUNTIF(Receipts!H2:H, "Pooja Items")', '=SUMIF(Receipts!H2:H, "Pooja Items", Receipts!I2:I)'],
+        ['Average Monetary Gift', '=IFERROR(AVERAGEIF(Receipts!I2:I, ">0"), 0)', 'Average per cash/online receipt', '', 'GRAND TOTAL', '=SUM(F4:F8)', '=SUM(G4:G8)'],
         ['', '', '', '', '', '', ''],
         ['CAREOFF WISE PERFORMANCE MATRIX', 'Cash (₹)', 'Online (₹)', 'Cheque (₹)', 'In-Kind Rows', 'Total Receipts', 'Careoff Total (₹)']
       ];
@@ -3529,12 +3615,12 @@
         const rowNum = 12 + index;
         lines.push([
           careoff,
-          `=SUMIFS(Receipts!$H$2:$H, Receipts!$E$2:$E, A${rowNum}, Receipts!$G$2:$G, "Cash")`,
-          `=SUMIFS(Receipts!$H$2:$H, Receipts!$E$2:$E, A${rowNum}, Receipts!$G$2:$G, "Online")`,
-          `=SUMIFS(Receipts!$H$2:$H, Receipts!$E$2:$E, A${rowNum}, Receipts!$G$2:$G, "Cheque")`,
-          `=COUNTIFS(Receipts!$E$2:$E, A${rowNum}, Receipts!$I$2:$I, "<>")`,
+          `=SUMIFS(Receipts!$I$2:$I, Receipts!$E$2:$E, A${rowNum}, Receipts!$H$2:$H, "Cash")`,
+          `=SUMIFS(Receipts!$I$2:$I, Receipts!$E$2:$E, A${rowNum}, Receipts!$H$2:$H, "Online")`,
+          `=SUMIFS(Receipts!$I$2:$I, Receipts!$E$2:$E, A${rowNum}, Receipts!$H$2:$H, "Cheque")`,
+          `=COUNTIFS(Receipts!$E$2:$E, A${rowNum}, Receipts!$J$2:$J, "<>")`,
           `=COUNTIF(Receipts!$E$2:$E, A${rowNum})`,
-          `=SUMIF(Receipts!$E$2:$E, A${rowNum}, Receipts!$H$2:$H)`
+          `=SUMIF(Receipts!$E$2:$E, A${rowNum}, Receipts!$I$2:$I)`
         ]);
       });
 
@@ -3560,9 +3646,9 @@
           b.start,
           b.end,
           `=COUNTIFS(Receipts!$B$2:$B, ">="&B${rNum}, Receipts!$B$2:$B, "<="&C${rNum})`,
-          `=SUMIFS(Receipts!$H$2:$H, Receipts!$B$2:$B, ">="&B${rNum}, Receipts!$B$2:$B, "<="&C${rNum}, Receipts!$G$2:$G, "Cash")`,
-          `=SUMIFS(Receipts!$H$2:$H, Receipts!$B$2:$B, ">="&B${rNum}, Receipts!$B$2:$B, "<="&C${rNum}, Receipts!$G$2:$G, "Online")+SUMIFS(Receipts!$H$2:$H, Receipts!$B$2:$B, ">="&B${rNum}, Receipts!$B$2:$B, "<="&C${rNum}, Receipts!$G$2:$G, "Cheque")`,
-          `=SUMIFS(Receipts!$H$2:$H, Receipts!$B$2:$B, ">="&B${rNum}, Receipts!$B$2:$B, "<="&C${rNum})`
+          `=SUMIFS(Receipts!$I$2:$I, Receipts!$B$2:$B, ">="&B${rNum}, Receipts!$B$2:$B, "<="&C${rNum}, Receipts!$H$2:$H, "Cash")`,
+          `=SUMIFS(Receipts!$I$2:$I, Receipts!$B$2:$B, ">="&B${rNum}, Receipts!$B$2:$B, "<="&C${rNum}, Receipts!$H$2:$H, "Online")+SUMIFS(Receipts!$I$2:$I, Receipts!$B$2:$B, ">="&B${rNum}, Receipts!$B$2:$B, "<="&C${rNum}, Receipts!$H$2:$H, "Cheque")`,
+          `=SUMIFS(Receipts!$I$2:$I, Receipts!$B$2:$B, ">="&B${rNum}, Receipts!$B$2:$B, "<="&C${rNum})`
         ]);
       });
 
@@ -3668,19 +3754,7 @@
     // =========================================================================
     function buildTSVContent() {
       const rows = getReceiptsWithRunningBalance();
-      return rows.map(r => [
-        r.serialNo,
-        r.receiptNo || '',
-        toDisplayDate(r.date),
-        r.donorName || '',
-        r.careOf || '',
-        r.phoneNo || '',
-        r.mode || 'Cash',
-        Number(r.amount) > 0 ? Number(r.amount) : '',
-        formatMaterialsString(r.materials),
-        r.runningBalance,
-        r.address || ''
-      ].join('\t')).join('\n');
+      return rows.map(r => buildSheetRowFromReceipt(r, r.runningBalance, gsColumnMap).join('\t')).join('\n');
     }
 
     function updateTSVPreview() {
@@ -3710,19 +3784,19 @@
     }
 
     function downloadReceiptsCSV() {
-      const headers = ['Serial No', 'Receipt No', 'Date', 'Donor Name', 'Careoff', 'Phone No', 'Mode', 'Amount', 'Materials', 'Balance', 'Address'];
+      const headers = ['Serial No', 'Receipt No', 'Date', 'Donor Name', 'Careoff', 'Address', 'Phone No', 'Mode', 'Amount', 'Materials', 'Running Value'];
       const rows = getReceiptsWithRunningBalance().map(r => [
         r.serialNo,
         r.receiptNo || '',
         toDisplayDate(r.date),
         r.donorName || '',
         r.careOf || '',
+        r.address || '',
         r.phoneNo || '',
         r.mode || 'Cash',
         Number(r.amount) || 0,
         formatMaterialsString(r.materials),
-        r.runningBalance,
-        r.address || ''
+        r.runningBalance
       ]);
 
       const csv = [headers, ...rows]
