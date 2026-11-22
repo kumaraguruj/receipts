@@ -120,6 +120,11 @@
             title="Write all rows to Receipts 2026 Google Sheet">
             <span>&#8679; Write</span>
           </button>
+          <button type="button" onclick="downloadFullWorkbookBackup()"
+            class="inline-flex items-center gap-1.5 min-h-[36px] px-2.5 sm:px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold bg-white/10 hover:bg-white/20 text-white border border-white/15 transition cursor-pointer whitespace-nowrap"
+            title="Download full local backup of your Google Sheet data">
+            <span>&#8681; Backup</span>
+          </button>
         </div>
       </div>
     </div>
@@ -204,30 +209,47 @@
               <input type="text" id="donor-name" list="donor-suggestions" required placeholder="Enter donor name"
                 class="w-full min-h-[42px] px-3 py-2 rounded-lg bg-white border border-slate-300 text-sm text-slatex-900 placeholder-slate-400 focus:outline-none focus:border-brand-700 focus:ring-3 focus:ring-brand-700/15 transition" />
               <datalist id="donor-suggestions"></datalist>
-              <p id="donor-error" class="hidden mt-1 text-xs text-red-600 font-medium">Please enter Donor Name.</p>
+              <p id="donor-error" class="hidden mt-1 text-xs text-red-600 font-medium">Please enter donor name.</p>
             </div>
 
             <div>
-              <label for="care-of" class="block text-xs font-semibold text-slate-700 mb-1">
-                Careoff
-              </label>
+              <div class="flex items-center justify-between mb-1">
+                <label for="care-of" class="block text-xs font-semibold text-slate-700">
+                  Careoff
+                </label>
+                <span class="text-[11px] text-slate-400">24 Careoffs</span>
+              </div>
               <input type="text" id="care-of" list="careoff-suggestions" placeholder="Select or type Careoff"
                 class="w-full min-h-[42px] px-3 py-2 rounded-lg bg-white border border-slate-300 text-sm text-slatex-900 placeholder-slate-400 focus:outline-none focus:border-brand-700 focus:ring-3 focus:ring-brand-700/15 transition" />
               <datalist id="careoff-suggestions"></datalist>
             </div>
           </div>
 
-          <!-- Row 2B: Address -->
-          <div>
-            <div class="flex items-center justify-between mb-1">
-              <label for="donor-address" class="block text-xs font-semibold text-slate-700">
-                Address
-              </label>
-              <span class="text-[11px] text-slate-400">Street / Area / City (Optional)</span>
+          <!-- Row 2B: Address & Reference -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label for="donor-address" class="block text-xs font-semibold text-slate-700">
+                  Address
+                </label>
+                <span class="text-[11px] text-slate-400">Street / Area / City</span>
+              </div>
+              <input type="text" id="donor-address" list="address-suggestions" placeholder="Enter donor address"
+                class="w-full min-h-[42px] px-3 py-2 rounded-lg bg-white border border-slate-300 text-sm text-slatex-900 placeholder-slate-400 focus:outline-none focus:border-brand-700 focus:ring-3 focus:ring-brand-700/15 transition" />
+              <datalist id="address-suggestions"></datalist>
             </div>
-            <input type="text" id="donor-address" list="address-suggestions" placeholder="Enter donor address"
-              class="w-full min-h-[42px] px-3 py-2 rounded-lg bg-white border border-slate-300 text-sm text-slatex-900 placeholder-slate-400 focus:outline-none focus:border-brand-700 focus:ring-3 focus:ring-brand-700/15 transition" />
-            <datalist id="address-suggestions"></datalist>
+
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label for="receipt-reference" class="block text-xs font-semibold text-slate-700">
+                  Reference
+                </label>
+                <span class="text-[11px] text-slate-400">Ref / Remarks / UPI ID</span>
+              </div>
+              <input type="text" id="receipt-reference" list="reference-suggestions" placeholder="Enter reference or remarks"
+                class="w-full min-h-[42px] px-3 py-2 rounded-lg bg-white border border-slate-300 text-sm text-slatex-900 placeholder-slate-400 focus:outline-none focus:border-brand-700 focus:ring-3 focus:ring-brand-700/15 transition" />
+              <datalist id="reference-suggestions"></datalist>
+            </div>
           </div>
 
           <!-- Row 3: Phone Number & Amount -->
@@ -336,7 +358,7 @@
           <!-- Direct WhatsApp Auto-Trigger Option -->
           <div class="pt-2.5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
             <label class="inline-flex items-center gap-2 cursor-pointer select-none">
-              <input type="checkbox" id="auto-whatsapp-toggle" checked
+              <input type="checkbox" id="auto-whatsapp-toggle"
                 class="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer" />
               <span class="text-xs font-medium text-slate-700">Send WhatsApp thank-you automatically on save</span>
             </label>
@@ -412,7 +434,7 @@
         <div id="register-feed-container" class="divide-y divide-slate-200 max-h-[620px] overflow-y-auto"></div>
         <!-- Mode B: Full Spreadsheet Table View -->
         <div id="register-table-container" class="hidden overflow-x-auto max-h-[620px] overflow-y-auto">
-          <table class="w-full min-w-[920px] text-left border-collapse">
+          <table class="w-full min-w-[1020px] text-left border-collapse">
             <thead class="bg-slate-50 border-b border-slate-200 sticky top-0 z-10 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
               <tr>
                 <th class="py-2.5 px-3">A &middot; S.No</th>
@@ -421,11 +443,12 @@
                 <th class="py-2.5 px-3">D &middot; Donor Name</th>
                 <th class="py-2.5 px-3">E &middot; Careoff</th>
                 <th class="py-2.5 px-3">F &middot; Address</th>
-                <th class="py-2.5 px-3">G &middot; Phone</th>
-                <th class="py-2.5 px-3">H &middot; Mode</th>
-                <th class="py-2.5 px-3 text-right">I &middot; Amount</th>
-                <th class="py-2.5 px-3">J &middot; Materials</th>
-                <th class="py-2.5 px-3 text-right">K &middot; Balance</th>
+                <th class="py-2.5 px-3">G &middot; Reference</th>
+                <th class="py-2.5 px-3">H &middot; Phone</th>
+                <th class="py-2.5 px-3">I &middot; Mode</th>
+                <th class="py-2.5 px-3 text-right">J &middot; Amount</th>
+                <th class="py-2.5 px-3">K &middot; Materials</th>
+                <th class="py-2.5 px-3 text-right">L &middot; Balance</th>
                 <th class="py-2.5 px-3 text-right">Actions</th>
               </tr>
             </thead>
@@ -885,7 +908,7 @@
           </div>
           <div class="p-3 rounded-lg bg-slate-50 border border-slate-200">
             <span class="font-bold text-slatex-900 block">2. Target Tab &amp; Range</span>
-            <span id="sync-summary-range" class="font-mono text-slate-600 mt-1 block">Receipts!A2:K</span>
+            <span id="sync-summary-range" class="font-mono text-slate-600 mt-1 block">Receipts!A2:L</span>
           </div>
           <div class="p-3 rounded-lg bg-slate-50 border border-slate-200">
             <span class="font-bold text-slatex-900 block">3. Live Auto-Pull &amp; Sync</span>
@@ -898,7 +921,7 @@
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200">
           <div>
             <h2 class="font-display font-bold text-base sm:text-lg text-slatex-900">
-              Google Sheets Manual Backup (<code class="font-mono text-sm">Receipts!A2:K</code>)
+              Google Sheets Manual Backup (<code class="font-mono text-sm">Receipts!A2:L</code>)
             </h2>
             <p class="text-xs text-slate-500 mt-0.5">
               Copy tab-separated rows to paste directly into cell <code class="font-mono font-semibold text-slate-700">A2</code> of your Google Sheet, or download as CSV.
@@ -922,10 +945,56 @@
 
         <div>
           <label for="tsv-preview-box" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
-            Live Tab-Separated Output (Columns A to K)
+            Live Tab-Separated Output (Columns A to L)
           </label>
           <textarea id="tsv-preview-box" readonly rows="10"
             class="w-full p-3 rounded-lg bg-slate-900 text-emerald-300 font-mono text-xs leading-relaxed focus:outline-none"></textarea>
+        </div>
+      </div>
+
+      <!-- Local Backup & Restore Vault Card -->
+      <div class="bg-white rounded-xl border border-slate-200 p-4 sm:p-6 shadow-xs space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200">
+          <div>
+            <div class="flex flex-wrap items-center gap-2">
+              <h2 class="font-display font-bold text-base sm:text-lg text-slatex-900">
+                Local Google Sheet Backup &amp; Restore
+              </h2>
+              <span id="last-local-backup-badge" class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                No file backup yet
+              </span>
+            </div>
+            <p class="text-xs text-slate-500 mt-0.5">
+              Save an offline backup file (<code class="font-mono font-semibold text-slate-700">.json</code> or Excel-ready <code class="font-mono font-semibold text-slate-700">.xls</code>) of your entire <code class="font-mono">Receipts 2026</code> sheet locally, or restore from a saved backup.
+            </p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button type="button" onclick="createLocalVaultSnapshot()"
+              class="px-3.5 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slatex-900 text-xs sm:text-sm font-semibold transition cursor-pointer">
+              + Save Browser Snapshot
+            </button>
+            <button type="button" onclick="downloadExcelWorkbookBackup()"
+              class="px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-semibold shadow-xs transition cursor-pointer">
+              Download Excel (.xls)
+            </button>
+            <button type="button" onclick="downloadFullWorkbookBackup()"
+              class="px-3.5 py-2 rounded-lg bg-brand-800 hover:bg-brand-700 text-white text-xs sm:text-sm font-semibold shadow-xs transition cursor-pointer">
+              Download Full Backup (.json)
+            </button>
+            <label class="px-3.5 py-2 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-xs sm:text-sm font-semibold transition cursor-pointer">
+              <span>Restore Backup File</span>
+              <input type="file" id="restore-backup-file-input" accept=".json,application/json" onchange="handleRestoreBackupFile(event)" class="hidden" />
+            </label>
+          </div>
+        </div>
+
+        <!-- Browser Local Snapshots List -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Saved Local Browser Snapshots (Up to 10)</span>
+            <span id="local-snapshots-count" class="text-[11px] font-mono text-slate-400">0 snapshots</span>
+          </div>
+          <div id="local-snapshots-list" class="divide-y divide-slate-200 rounded-xl border border-slate-200 bg-slate-50/50 overflow-hidden"></div>
         </div>
       </div>
 
@@ -1366,12 +1435,12 @@
     ];
 
     const INITIAL_RECEIPTS = [
-      { serialNo: 1, receiptNo: '001', date: '2026-11-15', donorName: 'Subramanian', careOf: 'Guru', address: '', phoneNo: '9840112233', amount: 100, mode: 'Cash', materials: [] },
-      { serialNo: 2, receiptNo: '002', date: '2026-11-15', donorName: 'Hari', careOf: 'Kandan', address: '', phoneNo: '9840223344', amount: 5000, mode: 'Cash', materials: [] },
-      { serialNo: 3, receiptNo: '003', date: '2026-11-15', donorName: 'Guru', careOf: '', address: '', phoneNo: '9840334455', amount: 200, mode: 'Online', materials: [] },
-      { serialNo: 4, receiptNo: '004', date: '2026-11-15', donorName: 'Ranga', careOf: 'Bala', address: '', phoneNo: '9840445566', amount: 0, mode: 'Annadhanam', materials: [{ item: 'Rava', qty: 1, unit: 'kg' }] },
-      { serialNo: 5, receiptNo: '250', date: '2026-11-16', donorName: 'Dhall', careOf: 'Suresh', address: '', phoneNo: '7600000000', amount: 0, mode: 'Annadhanam', materials: [{ item: 'Rice', qty: 10, unit: 'kg' }, { item: 'Rava', qty: 5, unit: 'kg' }] },
-      { serialNo: 6, receiptNo: '999', date: '2026-11-16', donorName: 'Guru', careOf: 'Sridhar', address: '', phoneNo: '9909090090', amount: 0, mode: 'Annadhanam', materials: [{ item: 'Cashew nuts', qty: 11, unit: 'kg' }] }
+      { serialNo: 1, receiptNo: '001', date: '2026-11-15', donorName: 'Subramanian', careOf: 'Guru', address: '', reference: '', phoneNo: '9840112233', amount: 100, mode: 'Cash', materials: [] },
+      { serialNo: 2, receiptNo: '002', date: '2026-11-15', donorName: 'Hari', careOf: 'Kandan', address: '', reference: '', phoneNo: '9840223344', amount: 5000, mode: 'Cash', materials: [] },
+      { serialNo: 3, receiptNo: '003', date: '2026-11-15', donorName: 'Guru', careOf: '', address: '', reference: '', phoneNo: '9840334455', amount: 200, mode: 'Online', materials: [] },
+      { serialNo: 4, receiptNo: '004', date: '2026-11-15', donorName: 'Ranga', careOf: 'Bala', address: '', reference: '', phoneNo: '9840445566', amount: 0, mode: 'Annadhanam', materials: [{ item: 'Rava', qty: 1, unit: 'kg' }] },
+      { serialNo: 5, receiptNo: '250', date: '2026-11-16', donorName: 'Dhall', careOf: 'Suresh', address: '', reference: '', phoneNo: '7600000000', amount: 0, mode: 'Annadhanam', materials: [{ item: 'Rice', qty: 10, unit: 'kg' }, { item: 'Rava', qty: 5, unit: 'kg' }] },
+      { serialNo: 6, receiptNo: '999', date: '2026-11-16', donorName: 'Guru', careOf: 'Sridhar', address: '', reference: '', phoneNo: '9909090090', amount: 0, mode: 'Annadhanam', materials: [{ item: 'Cashew nuts', qty: 11, unit: 'kg' }] }
     ];
 
     // =========================================================================
@@ -1399,6 +1468,7 @@
           donorName: String(r.donorName || '').trim() || 'Donor',
           careOf: String(r.careOf || '').trim(),
           address: String(r.address || '').trim(),
+          reference: String(r.reference || '').trim(),
           phoneNo: String(r.phoneNo || '').replace(/\D/g, '').slice(-10)
         };
 
@@ -1561,12 +1631,12 @@
       const rangeEl = document.getElementById('sync-summary-range');
       const autoEl = document.getElementById('sync-summary-autosync');
       if (idEl) idEl.textContent = cfg.spreadsheetId || 'Not set';
-      if (rangeEl) rangeEl.textContent = `${cfg.sheetName || 'Receipts'}!A1:K`;
+      if (rangeEl) rangeEl.textContent = `${cfg.sheetName || 'Receipts'}!A1:L`;
       if (autoEl) autoEl.textContent = isSignedIn ? 'Pulling every 5s + Instant Write' : (cfg.autoSync ? 'Enabled (Pulls every 5s once signed in)' : 'Manual Read/Write only');
     }
 
-    // Header-aware column index map with separate Careoff (Col E) and Address (Col F) columns:
-    // A: Serial No, B: Receipt No, C: Date, D: Donor Name, E: Careoff, F: Address, G: Phone No, H: Mode, I: Amount, J: Materials, K: Running Value
+    // Header-aware column index map with separate Careoff (E), Address (F), and Reference (G) columns:
+    // A: Serial No, B: Receipt No, C: Date, D: Donor Name, E: Careoff, F: Address, G: Reference, H: Phone No, I: Mode, J: Amount, K: Materials, L: Running Value
     let gsColumnMap = {
       serialNo: 0,
       receiptNo: 1,
@@ -1574,11 +1644,12 @@
       donorName: 3,
       careOf: 4,
       address: 5,
-      phoneNo: 6,
-      mode: 7,
-      amount: 8,
-      materials: 9,
-      balance: 10
+      reference: 6,
+      phoneNo: 7,
+      mode: 8,
+      amount: 9,
+      materials: 10,
+      balance: 11
     };
 
     function detectSheetColumnMap(headerRow) {
@@ -1594,6 +1665,7 @@
         else if (h.includes('donor') || h === 'name') map.donorName = idx;
         else if (h.includes('care')) map.careOf = idx;
         else if (h.includes('addr')) map.address = idx;
+        else if (h.includes('ref') || h.includes('remark')) map.reference = idx;
         else if (h.includes('phone') || h.includes('mobile')) map.phoneNo = idx;
         else if (h === 'mode' || h.includes('payment')) map.mode = idx;
         else if (h === 'amount' || h === 'amt') map.amount = idx;
@@ -1604,13 +1676,15 @@
     }
 
     function buildSheetRowFromReceipt(r, runningBalance, colMap = gsColumnMap) {
-      const row = new Array(11).fill('');
+      const colCount = Math.max(12, ...Object.values(colMap).map(v => v + 1));
+      const row = new Array(colCount).fill('');
       row[colMap.serialNo] = r.serialNo;
       row[colMap.receiptNo] = r.receiptNo || '';
       row[colMap.date] = toDisplayDate(r.date);
       row[colMap.donorName] = r.donorName || '';
       row[colMap.careOf] = r.careOf || '';
       row[colMap.address] = r.address || '';
+      row[colMap.reference] = r.reference || '';
       row[colMap.phoneNo] = r.phoneNo || '';
       row[colMap.mode] = r.mode || 'Cash';
       row[colMap.amount] = Number(r.amount) > 0 ? Number(r.amount) : '';
@@ -1742,7 +1816,7 @@
       if (gsIsPulling || gsIsWriting) return;
       gsIsPulling = true;
       try {
-        const range = encodeURIComponent(`${cfg.sheetName || 'Receipts'}!A1:K`);
+        const range = encodeURIComponent(`${cfg.sheetName || 'Receipts'}!A1:M`);
         const url = `https://sheets.googleapis.com/v4/spreadsheets/${cfg.spreadsheetId}/values/${range}`;
         const res = await fetch(url, {
           headers: { Authorization: `Bearer ${token}` }
@@ -1774,7 +1848,7 @@
 
         if (rows.length === 0) {
           if (!silentIfEmpty && !isBackgroundPoll) {
-            showToast('Sheet has headers only (rows A2:K empty). Click Write Sheet to upload.', 'info');
+            showToast('Sheet has headers only (rows A2:L empty). Click Write Sheet to upload.', 'info');
           }
           return;
         }
@@ -1788,6 +1862,7 @@
             let rawAmt = String(r[gsColumnMap.amount] || '').trim();
             let rawPhone = String(r[gsColumnMap.phoneNo] || '').trim();
             let rawAddr = String(r[gsColumnMap.address] || '').trim();
+            let rawRef = String(r[gsColumnMap.reference] || '').trim();
             let rawMat = String(r[gsColumnMap.materials] || '').trim();
 
             const colF = String(r[5] || '').trim();
@@ -1798,21 +1873,28 @@
             const colK = String(r[10] || '').trim();
 
             if (!hasHeaderRow) {
-              if (knownModes.includes(colH.toLowerCase())) {
-                // Separate Careoff (E) & Address (F), or Running Balance in F and Address in K
+              if (knownModes.includes(colI.toLowerCase())) {
+                rawAddr = colF;
+                rawRef = colG;
+                rawPhone = colH;
+                rawMode = colI;
+                rawAmt = colJ;
+                rawMat = colK;
+              } else if (knownModes.includes(colH.toLowerCase())) {
                 const colFIsBalance = /^\d{1,3}(,\d{3})*(\.\d+)?$/.test(colF);
                 rawAddr = colFIsBalance ? colK : colF;
+                rawRef = '';
                 rawPhone = colG;
                 rawMode = colH;
                 rawAmt = colI;
                 rawMat = colJ;
               } else if (knownModes.includes(colG.toLowerCase())) {
-                // Legacy layout: E=Careoff, F=Phone, G=Mode, H=Amount, I=Materials, J=RunningBal, K=Address
                 rawPhone = colF;
                 rawMode = colG;
                 rawAmt = colH;
                 rawMat = colI;
                 rawAddr = colK;
+                rawRef = '';
               }
             }
 
@@ -1846,6 +1928,7 @@
               donorName: String(r[gsColumnMap.donorName] || '').trim() || 'Donor',
               careOf: rawCareOf,
               address: rawAddr,
+              reference: rawRef,
               phoneNo: validPhone,
               mode: rawMode || 'Cash',
               amount: numericAmt,
@@ -1912,7 +1995,7 @@
         gsIsWriting = true;
         try {
           const sheetTab = cfg.sheetName || 'Receipts';
-          const headerRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${cfg.spreadsheetId}/values/${encodeURIComponent(`${sheetTab}!A1:K1`)}`, {
+          const headerRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${cfg.spreadsheetId}/values/${encodeURIComponent(`${sheetTab}!A1:M1`)}`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           if (headerRes.ok) {
@@ -1922,7 +2005,7 @@
             }
           }
 
-          const clearRange = encodeURIComponent(`${sheetTab}!A2:K1000`);
+          const clearRange = encodeURIComponent(`${sheetTab}!A2:M1000`);
           await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${cfg.spreadsheetId}/values/${clearRange}:clear`, {
             method: 'POST',
             headers: { Authorization: `Bearer ${token}` }
@@ -1932,7 +2015,7 @@
           if (rowsWithBal.length > 0) {
             const values = rowsWithBal.map(r => buildSheetRowFromReceipt(r, r.runningBalance, gsColumnMap));
 
-            const writeRange = encodeURIComponent(`${sheetTab}!A2:K${values.length + 1}`);
+            const writeRange = encodeURIComponent(`${sheetTab}!A2:M${values.length + 1}`);
             const writeUrl = `https://sheets.googleapis.com/v4/spreadsheets/${cfg.spreadsheetId}/values/${writeRange}?valueInputOption=USER_ENTERED`;
             const res = await fetch(writeUrl, {
               method: 'PUT',
@@ -1949,7 +2032,7 @@
           }
 
           if (!silentSuccess) {
-            showToast(`Wrote ${rowsWithBal.length} rows to "${sheetTab}!A2:K"!`);
+            showToast(`Wrote ${rowsWithBal.length} rows to "${sheetTab}!A2:L"!`);
           }
         } catch (err) {
           showToast(`Write Sheet failed: ${err.message}`, 'error');
@@ -1965,7 +2048,7 @@
           gsIsWriting = true;
           try {
             const sheetTab = cfg.sheetName || 'Receipts';
-            const readRange = encodeURIComponent(`${sheetTab}!A1:K`);
+            const readRange = encodeURIComponent(`${sheetTab}!A1:M`);
             const readRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${cfg.spreadsheetId}/values/${readRange}`, {
               headers: { Authorization: `Bearer ${token}` }
             });
@@ -2006,7 +2089,7 @@
 
             const valuesToAppend = assignedRows.map(r => buildSheetRowFromReceipt(r, r.runningBalance, gsColumnMap));
 
-            const appendRange = encodeURIComponent(`${sheetTab}!A2:K`);
+            const appendRange = encodeURIComponent(`${sheetTab}!A2:M`);
             const appendUrl = `https://sheets.googleapis.com/v4/spreadsheets/${cfg.spreadsheetId}/values/${appendRange}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
             const appendRes = await fetch(appendUrl, {
               method: 'POST',
@@ -2160,6 +2243,12 @@
         const uniqueAddresses = [...new Set(receipts.map(r => (r.address || '').trim()).filter(Boolean))].sort();
         addressList.innerHTML = uniqueAddresses.map(a => `<option value="${escapeHTML(a)}"></option>`).join('');
       }
+
+      const refList = document.getElementById('reference-suggestions');
+      if (refList) {
+        const uniqueRefs = [...new Set(receipts.map(r => (r.reference || '').trim()).filter(Boolean))].sort();
+        refList.innerHTML = uniqueRefs.map(ref => `<option value="${escapeHTML(ref)}"></option>`).join('');
+      }
     }
 
     function updateSelectedMaterialHint() {
@@ -2167,21 +2256,27 @@
       const unitBadge = document.getElementById('material-unit-badge');
       const hintBox = document.getElementById('material-req-hint');
       const hintText = document.getElementById('material-req-hint-text');
-      const id = Number(select.value);
+      if (!select) return;
 
+      const id = Number(select.value);
       if (!id) {
-        unitBadge.textContent = 'unit';
-        hintBox.classList.add('hidden');
+        if (unitBadge) unitBadge.textContent = 'unit';
+        if (hintBox) hintBox.classList.add('hidden');
         return;
       }
 
-      const progressList = computeRequirementProgress();
-      const found = progressList.find(x => x.id === id);
-      if (found) {
-        unitBadge.textContent = found.unit;
-        hintText.textContent = `${found.en}: Required ${found.required} ${found.unit} · Received ${found.received} · Pending ${found.pending} ${found.unit}`;
-        hintBox.classList.remove('hidden');
+      const found = computeRequirementProgress().find(x => x.id === id);
+      if (!found) {
+        if (unitBadge) unitBadge.textContent = 'unit';
+        if (hintBox) hintBox.classList.add('hidden');
+        return;
       }
+
+      if (unitBadge) unitBadge.textContent = found.unit;
+      if (hintText) {
+        hintText.textContent = `Required: ${found.required} ${found.unit} · Received: ${found.received} ${found.unit} · Pending: ${found.pending} ${found.unit}`;
+      }
+      if (hintBox) hintBox.classList.remove('hidden');
     }
 
     function renderDraftMaterials() {
@@ -2289,6 +2384,7 @@
       document.getElementById('donor-name').value = '';
       document.getElementById('care-of').value = '';
       document.getElementById('donor-address').value = '';
+      document.getElementById('receipt-reference').value = '';
       document.getElementById('phone-no').value = '';
       document.getElementById('amount').value = '';
       document.getElementById('material-item-select').value = '';
@@ -2344,6 +2440,7 @@
       const date = document.getElementById('receipt-date').value || new Date().toISOString().split('T')[0];
       const careOf = document.getElementById('care-of').value.trim();
       const address = document.getElementById('donor-address').value.trim();
+      const reference = document.getElementById('receipt-reference').value.trim();
       const amount = Math.max(0, Number(document.getElementById('amount').value) || 0);
       const selectedMode = document.getElementById('payment-mode').value || 'Cash';
       const mats = [...currentDraftMaterials];
@@ -2360,6 +2457,7 @@
           donorName,
           careOf,
           address,
+          reference,
           phoneNo: rawPhone,
           amount,
           mode: monetaryModes.includes(selectedMode) ? selectedMode : 'Cash',
@@ -2371,6 +2469,7 @@
           donorName,
           careOf,
           address,
+          reference,
           phoneNo: rawPhone,
           amount: 0,
           mode: selectedMode === 'Pooja Items' ? 'Pooja Items' : 'Annadhanam',
@@ -2383,6 +2482,7 @@
           donorName,
           careOf,
           address,
+          reference,
           phoneNo: rawPhone,
           amount: 0,
           mode: materialModes.includes(selectedMode) ? selectedMode : 'Annadhanam',
@@ -2395,6 +2495,7 @@
           donorName,
           careOf,
           address,
+          reference,
           phoneNo: rawPhone,
           amount,
           mode: monetaryModes.includes(selectedMode) ? selectedMode : 'Cash',
@@ -2472,6 +2573,7 @@
       document.getElementById('donor-name').value = target.donorName || '';
       document.getElementById('care-of').value = target.careOf || '';
       document.getElementById('donor-address').value = target.address || '';
+      document.getElementById('receipt-reference').value = target.reference || '';
       document.getElementById('phone-no').value = target.phoneNo || '';
       document.getElementById('amount').value = Number(target.amount) > 0 ? Number(target.amount) : '';
       setPaymentMode(target.mode || 'Cash');
@@ -2928,6 +3030,7 @@
               r.receiptNo ? `Receipt #${escapeHTML(r.receiptNo)}` : null,
               r.careOf ? `C/o ${escapeHTML(r.careOf)}` : null,
               r.address ? escapeHTML(r.address) : null,
+              r.reference ? `Ref: ${escapeHTML(r.reference)}` : null,
               r.phoneNo ? escapeHTML(r.phoneNo) : null
             ].filter(Boolean);
 
@@ -2954,16 +3057,24 @@
                   </div>
                   <div class="flex items-center gap-1.5">
                     <button type="button" onclick="shareReceiptWhatsApp(${r.serialNo})"
-                      class="min-h-[32px] px-2.5 py-1 rounded-md text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition cursor-pointer">
+                      class="min-h-[32px] px-2.5 py-1 rounded-lg text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 shadow-2xs transition cursor-pointer">
                       WhatsApp
                     </button>
                     <button type="button" onclick="editReceiptRow(${r.serialNo})"
-                      class="min-h-[32px] px-2.5 py-1 rounded-md text-xs font-medium text-slate-600 hover:text-brand-800 hover:bg-brand-50 border border-slate-200 transition cursor-pointer">
-                      Edit
+                      class="min-h-[32px] px-2.5 py-1 rounded-lg text-xs font-semibold text-brand-700 bg-brand-50/80 hover:bg-brand-100 border border-brand-200/80 shadow-2xs inline-flex items-center gap-1 transition cursor-pointer"
+                      title="Edit Receipt">
+                      <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" />
+                      </svg>
+                      <span>Edit</span>
                     </button>
                     <button type="button" onclick="promptDeleteReceipt(${r.serialNo})"
-                      class="min-h-[32px] px-2.5 py-1 rounded-md text-xs font-medium text-slate-600 hover:text-red-700 hover:bg-red-50 border border-slate-200 transition cursor-pointer">
-                      Del
+                      class="min-h-[32px] px-2.5 py-1 rounded-lg text-xs font-semibold text-rose-700 bg-rose-50/80 hover:bg-rose-100 border border-rose-200/80 shadow-2xs inline-flex items-center gap-1 transition cursor-pointer"
+                      title="Delete Receipt">
+                      <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                      </svg>
+                      <span>Delete</span>
                     </button>
                   </div>
                 </div>
@@ -2982,16 +3093,28 @@
             <td class="py-2.5 px-3 font-mono text-xs text-slate-600 whitespace-nowrap tabular-nums">${toDisplayDate(r.date)}</td>
             <td class="py-2.5 px-3 font-semibold text-slatex-900">${escapeHTML(r.donorName)}</td>
             <td class="py-2.5 px-3 text-slate-600">${escapeHTML(r.careOf || '—')}</td>
-            <td class="py-2.5 px-3 text-xs text-slate-600 max-w-[180px] truncate" title="${escapeHTML(r.address || '')}">${escapeHTML(r.address || '—')}</td>
+            <td class="py-2.5 px-3 text-xs text-slate-600 max-w-[160px] truncate" title="${escapeHTML(r.address || '')}">${escapeHTML(r.address || '—')}</td>
+            <td class="py-2.5 px-3 text-xs text-slate-600 max-w-[140px] truncate" title="${escapeHTML(r.reference || '')}">${escapeHTML(r.reference || '—')}</td>
             <td class="py-2.5 px-3 font-mono text-xs text-slate-600 tabular-nums">${escapeHTML(r.phoneNo || '—')}</td>
             <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded-full text-[11px] font-semibold border ${getModeBadgeClasses(r.mode)}">${escapeHTML(r.mode)}</span></td>
             <td class="py-2.5 px-3 text-right font-semibold text-slatex-900 tabular-nums">${Number(r.amount) > 0 ? formatINR(r.amount) : '—'}</td>
             <td class="py-2.5 px-3 text-xs text-slate-700">${escapeHTML(formatMaterialsString(r.materials) || '—')}</td>
             <td class="py-2.5 px-3 text-right font-mono text-xs font-semibold text-emerald-700 tabular-nums">${formatINR(r.runningBalance)}</td>
-            <td class="py-2.5 px-3 text-right whitespace-nowrap space-x-2 text-xs font-semibold">
-              <button type="button" onclick="shareReceiptWhatsApp(${r.serialNo})" class="text-emerald-700 hover:underline cursor-pointer">WA</button>
-              <button type="button" onclick="editReceiptRow(${r.serialNo})" class="text-brand-700 hover:underline cursor-pointer">Edit</button>
-              <button type="button" onclick="promptDeleteReceipt(${r.serialNo})" class="text-red-600 hover:underline cursor-pointer">Del</button>
+            <td class="py-2.5 px-3 text-right whitespace-nowrap">
+              <div class="inline-flex items-center gap-1">
+                <button type="button" onclick="shareReceiptWhatsApp(${r.serialNo})"
+                  class="px-2 py-1 rounded-md text-[11px] font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 transition cursor-pointer">
+                  WA
+                </button>
+                <button type="button" onclick="editReceiptRow(${r.serialNo})"
+                  class="px-2 py-1 rounded-md text-[11px] font-semibold text-brand-700 bg-brand-50 hover:bg-brand-100 border border-brand-200/80 transition cursor-pointer">
+                  Edit
+                </button>
+                <button type="button" onclick="promptDeleteReceipt(${r.serialNo})"
+                  class="px-2 py-1 rounded-md text-[11px] font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200/80 transition cursor-pointer">
+                  Delete
+                </button>
+              </div>
             </td>
           </tr>
         `).join('');
@@ -3804,7 +3927,7 @@
     }
 
     function downloadReceiptsCSV() {
-      const headers = ['Serial No', 'Receipt No', 'Date', 'Donor Name', 'Careoff', 'Address', 'Phone No', 'Mode', 'Amount', 'Materials', 'Running Value'];
+      const headers = ['Serial No', 'Receipt No', 'Date', 'Donor Name', 'Careoff', 'Address', 'Reference', 'Phone No', 'Mode', 'Amount', 'Materials', 'Running Value'];
       const rows = getReceiptsWithRunningBalance().map(r => [
         r.serialNo,
         r.receiptNo || '',
@@ -3812,6 +3935,7 @@
         r.donorName || '',
         r.careOf || '',
         r.address || '',
+        r.reference || '',
         r.phoneNo || '',
         r.mode || 'Cash',
         Number(r.amount) || 0,
@@ -3833,6 +3957,268 @@
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
       showToast('CSV file downloaded.');
+    }
+
+    // =========================================================================
+    // 10B. LOCAL WORKBOOK BACKUP & RESTORE (.JSON, .XLS & BROWSER SNAPSHOTS)
+    // =========================================================================
+    const LOCAL_SNAPSHOTS_KEY = 'sass_local_snapshots_v1';
+    const LAST_BACKUP_TIME_KEY = 'sass_last_backup_ts_v1';
+
+    function getLocalSnapshots() {
+      try {
+        const raw = localStorage.getItem(LOCAL_SNAPSHOTS_KEY);
+        const list = raw ? JSON.parse(raw) : [];
+        return Array.isArray(list) ? list : [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function saveLocalSnapshots(list) {
+      try {
+        localStorage.setItem(LOCAL_SNAPSHOTS_KEY, JSON.stringify(list.slice(0, 10)));
+      } catch (e) {
+        showToast('Browser storage full. Please download a .json backup file instead.', 'error');
+      }
+    }
+
+    function updateLastBackupBadge() {
+      const badge = document.getElementById('last-local-backup-badge');
+      if (!badge) return;
+      const ts = localStorage.getItem(LAST_BACKUP_TIME_KEY);
+      if (ts) {
+        badge.textContent = `Last backed up: ${ts}`;
+        badge.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200';
+      } else {
+        badge.textContent = 'No file backup yet';
+        badge.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200';
+      }
+    }
+
+    function buildBackupPayloadObject() {
+      const rowsWithBal = getReceiptsWithRunningBalance();
+      const totalAmount = rowsWithBal.reduce((s, r) => s + (Number(r.amount) || 0), 0);
+      return {
+        app: 'Sri Ayyappa Swami Seva Sangam — Receipts 2026',
+        backupVersion: '1.0',
+        exportedAt: new Date().toISOString(),
+        spreadsheetId: getGoogleSheetsConfig().spreadsheetId || '',
+        sheetName: getGoogleSheetsConfig().sheetName || 'Receipts',
+        summary: {
+          totalRows: rowsWithBal.length,
+          totalCollection: totalAmount
+        },
+        receipts: rowsWithBal,
+        requirementsProgress: computeRequirementProgress()
+      };
+    }
+
+    function downloadFullWorkbookBackup() {
+      const payload = buildBackupPayloadObject();
+      const jsonStr = JSON.stringify(payload, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const now = new Date();
+      const stamp = `${now.toISOString().split('T')[0]}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Receipts_2026_Backup_${stamp}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      const readableTime = now.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+      localStorage.setItem(LAST_BACKUP_TIME_KEY, readableTime);
+      updateLastBackupBadge();
+      createLocalVaultSnapshot(true);
+      showToast(`Local backup downloaded (${payload.summary.totalRows} rows)!`);
+    }
+
+    function downloadExcelWorkbookBackup() {
+      const rows = getReceiptsWithRunningBalance();
+      const reqs = computeRequirementProgress();
+
+      const receiptRowsXml = rows.map(r => `
+        <Row>
+          <Cell><Data ss:Type="Number">${r.serialNo}</Data></Cell>
+          <Cell><Data ss:Type="String">${escapeHTML(r.receiptNo || '')}</Data></Cell>
+          <Cell><Data ss:Type="String">${escapeHTML(toDisplayDate(r.date))}</Data></Cell>
+          <Cell><Data ss:Type="String">${escapeHTML(r.donorName || '')}</Data></Cell>
+          <Cell><Data ss:Type="String">${escapeHTML(r.careOf || '')}</Data></Cell>
+          <Cell><Data ss:Type="String">${escapeHTML(r.address || '')}</Data></Cell>
+          <Cell><Data ss:Type="String">${escapeHTML(r.reference || '')}</Data></Cell>
+          <Cell><Data ss:Type="String">${escapeHTML(r.phoneNo || '')}</Data></Cell>
+          <Cell><Data ss:Type="String">${escapeHTML(r.mode || 'Cash')}</Data></Cell>
+          <Cell><Data ss:Type="Number">${Number(r.amount) || 0}</Data></Cell>
+          <Cell><Data ss:Type="String">${escapeHTML(formatMaterialsString(r.materials))}</Data></Cell>
+          <Cell><Data ss:Type="Number">${r.runningBalance}</Data></Cell>
+        </Row>`).join('');
+
+      const reqRowsXml = reqs.map(item => `
+        <Row>
+          <Cell><Data ss:Type="Number">${item.id}</Data></Cell>
+          <Cell><Data ss:Type="String">${escapeHTML(item.en)}</Data></Cell>
+          <Cell><Data ss:Type="String">${escapeHTML(item.ta)}</Data></Cell>
+          <Cell><Data ss:Type="Number">${item.required}</Data></Cell>
+          <Cell><Data ss:Type="Number">${item.received}</Data></Cell>
+          <Cell><Data ss:Type="Number">${item.pending}</Data></Cell>
+          <Cell><Data ss:Type="String">${escapeHTML(item.unit)}</Data></Cell>
+          <Cell><Data ss:Type="String">${escapeHTML(item.status)}</Data></Cell>
+        </Row>`).join('');
+
+      const xml = `<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+  <Worksheet ss:Name="Receipts">
+    <Table>
+      <Row>
+        <Cell><Data ss:Type="String">Serial No</Data></Cell>
+        <Cell><Data ss:Type="String">Receipt No</Data></Cell>
+        <Cell><Data ss:Type="String">Date</Data></Cell>
+        <Cell><Data ss:Type="String">Donor Name</Data></Cell>
+        <Cell><Data ss:Type="String">Careoff</Data></Cell>
+        <Cell><Data ss:Type="String">Address</Data></Cell>
+        <Cell><Data ss:Type="String">Reference</Data></Cell>
+        <Cell><Data ss:Type="String">Phone No</Data></Cell>
+        <Cell><Data ss:Type="String">Mode</Data></Cell>
+        <Cell><Data ss:Type="String">Amount</Data></Cell>
+        <Cell><Data ss:Type="String">Materials</Data></Cell>
+        <Cell><Data ss:Type="String">Running Value</Data></Cell>
+      </Row>
+      ${receiptRowsXml}
+    </Table>
+  </Worksheet>
+  <Worksheet ss:Name="Requirements">
+    <Table>
+      <Row>
+        <Cell><Data ss:Type="String">S.No</Data></Cell>
+        <Cell><Data ss:Type="String">Item (English)</Data></Cell>
+        <Cell><Data ss:Type="String">Item (Tamil)</Data></Cell>
+        <Cell><Data ss:Type="String">Required</Data></Cell>
+        <Cell><Data ss:Type="String">Received</Data></Cell>
+        <Cell><Data ss:Type="String">Pending</Data></Cell>
+        <Cell><Data ss:Type="String">Unit</Data></Cell>
+        <Cell><Data ss:Type="String">Status</Data></Cell>
+      </Row>
+      ${reqRowsXml}
+    </Table>
+  </Worksheet>
+</Workbook>`;
+
+      const blob = new Blob([xml], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Receipts_2026_Workbook_${new Date().toISOString().split('T')[0]}.xls`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      const readableTime = new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+      localStorage.setItem(LAST_BACKUP_TIME_KEY, readableTime);
+      updateLastBackupBadge();
+      showToast('Excel workbook (.xls) with Receipts & Requirements downloaded!');
+    }
+
+    function createLocalVaultSnapshot(silent = false) {
+      const snapshots = getLocalSnapshots();
+      const totalAmount = receipts.reduce((s, r) => s + (Number(r.amount) || 0), 0);
+      const snap = {
+        id: Date.now(),
+        createdAt: new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }),
+        rowCount: receipts.length,
+        totalAmount,
+        receipts: JSON.parse(JSON.stringify(receipts))
+      };
+      snapshots.unshift(snap);
+      saveLocalSnapshots(snapshots);
+      renderLocalSnapshotsList();
+      if (!silent) {
+        showToast(`Saved browser snapshot (${snap.rowCount} rows · ${formatINR(totalAmount)}).`);
+      }
+    }
+
+    function restoreLocalVaultSnapshot(snapId) {
+      const snapshots = getLocalSnapshots();
+      const found = snapshots.find(s => s.id === snapId);
+      if (!found || !Array.isArray(found.receipts)) {
+        showToast('Snapshot not found.', 'error');
+        return;
+      }
+      receipts = normalizeReceiptsData(found.receipts);
+      saveReceipts();
+      renderAll();
+      showToast(`Restored snapshot from ${found.createdAt} (${receipts.length} rows)!`);
+    }
+
+    function deleteLocalVaultSnapshot(snapId) {
+      const updated = getLocalSnapshots().filter(s => s.id !== snapId);
+      saveLocalSnapshots(updated);
+      renderLocalSnapshotsList();
+      showToast('Snapshot deleted.', 'info');
+    }
+
+    function renderLocalSnapshotsList() {
+      const container = document.getElementById('local-snapshots-list');
+      const countEl = document.getElementById('local-snapshots-count');
+      if (!container) return;
+
+      const snapshots = getLocalSnapshots();
+      if (countEl) countEl.textContent = `${snapshots.length} snapshot${snapshots.length === 1 ? '' : 's'}`;
+
+      if (snapshots.length === 0) {
+        container.innerHTML = `<div class="p-4 text-center text-xs text-slate-500">No browser snapshots saved yet. Click <strong>+ Save Browser Snapshot</strong> or <strong>Download Full Backup (.json)</strong> to create one.</div>`;
+        return;
+      }
+
+      container.innerHTML = snapshots.map(s => `
+        <div class="p-3 bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+          <div>
+            <span class="font-semibold text-slatex-900">${escapeHTML(s.createdAt)}</span>
+            <span class="text-slate-500 ml-2 font-mono tabular-nums">${s.rowCount} rows &middot; ${formatINR(s.totalAmount)}</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="restoreLocalVaultSnapshot(${s.id})"
+              class="px-2.5 py-1 rounded-md bg-brand-50 hover:bg-brand-100 text-brand-800 border border-brand-200 font-semibold transition cursor-pointer">
+              Restore
+            </button>
+            <button type="button" onclick="deleteLocalVaultSnapshot(${s.id})"
+              class="px-2.5 py-1 rounded-md bg-slate-100 hover:bg-red-50 text-slate-600 hover:text-red-700 font-medium transition cursor-pointer">
+              Delete
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function handleRestoreBackupFile(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          const restoredList = Array.isArray(parsed) ? parsed : parsed.receipts;
+          if (!Array.isArray(restoredList) || restoredList.length === 0) {
+            throw new Error('Backup file does not contain valid receipt rows.');
+          }
+          createLocalVaultSnapshot(true);
+          receipts = normalizeReceiptsData(restoredList);
+          saveReceipts();
+          renderAll();
+          showToast(`Restored ${receipts.length} receipts from "${file.name}"!`);
+        } catch (err) {
+          showToast(`Restore failed: ${err.message}`, 'error');
+        } finally {
+          event.target.value = '';
+        }
+      };
+      reader.readAsText(file);
     }
 
     function resetToWorkbookDefaults() {
@@ -3870,7 +4256,11 @@
 
       if (tabName === 'dashboard') renderDashboardView();
       if (tabName === 'requirements') renderRequirementsTable();
-      if (tabName === 'export') updateTSVPreview();
+      if (tabName === 'export') {
+        updateTSVPreview();
+        updateLastBackupBadge();
+        renderLocalSnapshotsList();
+      }
     }
 
     function showToast(message, type = 'success') {
@@ -3893,6 +4283,8 @@
       renderDashboardView();
       renderRequirementsTable();
       updateTSVPreview();
+      updateLastBackupBadge();
+      renderLocalSnapshotsList();
     }
 
     // Expose all inline-invoked handlers explicitly on window
@@ -3935,6 +4327,12 @@
       quickDonateItem,
       copyAllReceiptsTSV,
       downloadReceiptsCSV,
+      downloadFullWorkbookBackup,
+      downloadExcelWorkbookBackup,
+      createLocalVaultSnapshot,
+      restoreLocalVaultSnapshot,
+      deleteLocalVaultSnapshot,
+      handleRestoreBackupFile,
       resetToWorkbookDefaults,
       switchTab
     });
