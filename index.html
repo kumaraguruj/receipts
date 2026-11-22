@@ -1565,7 +1565,8 @@
       if (autoEl) autoEl.textContent = isSignedIn ? 'Pulling every 5s + Instant Write' : (cfg.autoSync ? 'Enabled (Pulls every 5s once signed in)' : 'Manual Read/Write only');
     }
 
-    // Header-aware column index map (defaults to A:Serial, B:Receipt, C:Date, D:Donor, E:Careoff, F:Address, G:Phone, H:Mode, I:Amount, J:Materials, K:Balance)
+    // Header-aware column index map with separate Careoff (Col E) and Address (Col F) columns:
+    // A: Serial No, B: Receipt No, C: Date, D: Donor Name, E: Careoff, F: Address, G: Phone No, H: Mode, I: Amount, J: Materials, K: Running Value
     let gsColumnMap = {
       serialNo: 0,
       receiptNo: 1,
@@ -1581,19 +1582,7 @@
     };
 
     function detectSheetColumnMap(headerRow) {
-      const map = {
-        serialNo: 0,
-        receiptNo: 1,
-        date: 2,
-        donorName: 3,
-        careOf: 4,
-        address: 5,
-        phoneNo: 6,
-        mode: 7,
-        amount: 8,
-        materials: 9,
-        balance: 10
-      };
+      const map = { ...gsColumnMap };
       if (!Array.isArray(headerRow) || headerRow.length === 0) return map;
 
       headerRow.forEach((cell, idx) => {
@@ -1794,26 +1783,57 @@
         const parsed = rows
           .filter(r => r && (r[gsColumnMap.donorName] || r[gsColumnMap.mode] || r[gsColumnMap.amount] || r[gsColumnMap.materials]))
           .map((r, idx) => {
+            const rawCareOf = String(r[gsColumnMap.careOf] || '').trim();
             let rawMode = String(r[gsColumnMap.mode] || '').trim();
             let rawAmt = String(r[gsColumnMap.amount] || '').trim();
             let rawPhone = String(r[gsColumnMap.phoneNo] || '').trim();
             let rawAddr = String(r[gsColumnMap.address] || '').trim();
             let rawMat = String(r[gsColumnMap.materials] || '').trim();
 
-            // Safety fallback if a sheet has Phone at F (5) and Mode at G (6) instead of Address at F (5)
             const colF = String(r[5] || '').trim();
             const colG = String(r[6] || '').trim();
             const colH = String(r[7] || '').trim();
-            if (!hasHeaderRow && knownModes.includes(colG.toLowerCase()) && !knownModes.includes(colH.toLowerCase())) {
-              rawPhone = colF;
-              rawMode = colG;
-              rawAmt = colH;
-              rawMat = String(r[8] || '').trim();
-              rawAddr = String(r[10] || '').trim();
-            } else if (knownModes.includes(rawAmt.toLowerCase()) && !knownModes.includes(rawMode.toLowerCase())) {
+            const colI = String(r[8] || '').trim();
+            const colJ = String(r[9] || '').trim();
+            const colK = String(r[10] || '').trim();
+
+            if (!hasHeaderRow) {
+              if (knownModes.includes(colH.toLowerCase())) {
+                // Separate Careoff (E) & Address (F), or Running Balance in F and Address in K
+                const colFIsBalance = /^\d{1,3}(,\d{3})*(\.\d+)?$/.test(colF);
+                rawAddr = colFIsBalance ? colK : colF;
+                rawPhone = colG;
+                rawMode = colH;
+                rawAmt = colI;
+                rawMat = colJ;
+              } else if (knownModes.includes(colG.toLowerCase())) {
+                // Legacy layout: E=Careoff, F=Phone, G=Mode, H=Amount, I=Materials, J=RunningBal, K=Address
+                rawPhone = colF;
+                rawMode = colG;
+                rawAmt = colH;
+                rawMat = colI;
+                rawAddr = colK;
+              }
+            }
+
+            // Guard against a 10-digit phone number or swapped mode/amount landing in Amount
+            if (knownModes.includes(rawAmt.toLowerCase()) && !knownModes.includes(rawMode.toLowerCase())) {
               const tmp = rawMode;
               rawMode = rawAmt;
               rawAmt = tmp;
+            }
+            const cleanAmtDigits = rawAmt.replace(/[^0-9.]/g, '');
+            let numericAmt = parseFloat(cleanAmtDigits) || 0;
+            // If rawAmt is an unformatted 10-digit mobile number (e.g. 9540702156) and Phone is empty, move it to Phone
+            if (/^[6-9]\d{9}$/.test(rawAmt.trim()) && !rawPhone) {
+              rawPhone = rawAmt.trim();
+              numericAmt = 0;
+            }
+
+            // If Materials contains only a plain number (e.g., "500" or "18501") and Amount is 0, treat it as Amount
+            if (/^\d+(\.\d+)?$/.test(rawMat) && numericAmt === 0) {
+              numericAmt = parseFloat(rawMat) || 0;
+              rawMat = '';
             }
 
             const cleanPhoneDigits = rawPhone.replace(/\D/g, '');
@@ -1824,11 +1844,11 @@
               receiptNo: String(r[gsColumnMap.receiptNo] || '').trim(),
               date: parseSheetDateToISO(r[gsColumnMap.date]),
               donorName: String(r[gsColumnMap.donorName] || '').trim() || 'Donor',
-              careOf: String(r[gsColumnMap.careOf] || '').trim(),
+              careOf: rawCareOf,
               address: rawAddr,
               phoneNo: validPhone,
               mode: rawMode || 'Cash',
-              amount: parseFloat(String(rawAmt || '0').replace(/[^0-9.]/g, '')) || 0,
+              amount: numericAmt,
               materials: parseSheetMaterialsString(rawMat)
             };
           });
