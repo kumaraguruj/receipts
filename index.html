@@ -136,6 +136,9 @@
           <button type="button" data-tab="receipts" class="nav-tab min-h-[38px] px-3.5 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap transition cursor-pointer bg-white text-brand-900 shadow-xs">
             Receipts Entry
           </button>
+          <button type="button" data-tab="all-receipts" class="nav-tab min-h-[38px] px-3.5 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap transition cursor-pointer text-slate-200 hover:text-white hover:bg-white/10">
+            All Receipts (<span id="nav-all-receipts-count">0</span>)
+          </button>
           <button type="button" data-tab="dashboard" class="nav-tab min-h-[38px] px-3.5 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap transition cursor-pointer text-slate-200 hover:text-white hover:bg-white/10">
             Executive Dashboard
           </button>
@@ -456,6 +459,115 @@
           </table>
         </div>
       </section>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- VIEW 1B: ALL RECEIPTS REGISTER + FILTERS   -->
+    <!-- ========================================== -->
+    <div id="view-all-receipts" class="hidden space-y-4">
+      <div class="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+        <!-- Header & Summary Bar -->
+        <div class="p-4 sm:p-5 border-b border-slate-200 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+          <div>
+            <div class="flex flex-wrap items-center gap-2">
+              <h2 class="font-display font-bold text-base sm:text-lg text-slatex-900">
+                All Receipts Master Register
+              </h2>
+              <span id="all-rcpt-count-badge" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-brand-50 text-brand-800 border border-brand-200 tabular-nums">
+                Showing 0 of 0
+              </span>
+              <span id="all-rcpt-total-badge" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 tabular-nums">
+                Filtered Total: ₹0
+              </span>
+            </div>
+            <p class="text-xs text-slate-500 mt-0.5">
+              Complete sheet register (<code class="font-mono">A:L</code>) with instant search, Mode, Careoff, Book &amp; Date filters
+            </p>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <button type="button" onclick="resetAllReceiptsFilters()" id="all-rcpt-reset-btn"
+              class="hidden min-h-[38px] px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition cursor-pointer">
+              Reset Filters
+            </button>
+            <button type="button" onclick="copyFilteredReceiptsTSV()"
+              class="min-h-[38px] px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-2xs transition cursor-pointer">
+              Copy Filtered (TSV)
+            </button>
+            <button type="button" onclick="switchTab('receipts')"
+              class="min-h-[38px] px-3.5 py-1.5 rounded-lg bg-brand-800 hover:bg-brand-700 text-white text-xs font-semibold shadow-2xs transition cursor-pointer">
+              + New Receipt
+            </button>
+          </div>
+        </div>
+
+        <!-- Multi-Filter Toolbar -->
+        <div class="p-3.5 sm:p-4 bg-slate-50/80 border-b border-slate-200 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2.5">
+          <div class="sm:col-span-2">
+            <input type="search" id="all-rcpt-search" oninput="renderAllReceiptsTab()"
+              placeholder="Search donor, receipt #, phone, address, reference, item..."
+              class="w-full min-h-[40px] px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-xs sm:text-sm text-slatex-900 placeholder-slate-400 focus:outline-none focus:border-brand-700" />
+          </div>
+
+          <div>
+            <select id="all-rcpt-filter-mode" onchange="renderAllReceiptsTab()"
+              class="w-full min-h-[40px] px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-xs font-medium text-slate-700 focus:outline-none focus:border-brand-700">
+              <option value="ALL">All Modes</option>
+              <option value="Cash">Cash</option>
+              <option value="Online">Online</option>
+              <option value="Cheque">Cheque</option>
+              <option value="Annadhanam">Annadhanam</option>
+              <option value="Pooja Items">Pooja Items</option>
+            </select>
+          </div>
+
+          <div>
+            <select id="all-rcpt-filter-careoff" onchange="renderAllReceiptsTab()"
+              class="w-full min-h-[40px] px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-xs font-medium text-slate-700 focus:outline-none focus:border-brand-700">
+              <option value="ALL">All Careoffs</option>
+            </select>
+          </div>
+
+          <div>
+            <select id="all-rcpt-filter-book" onchange="renderAllReceiptsTab()"
+              class="w-full min-h-[40px] px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-xs font-medium text-slate-700 focus:outline-none focus:border-brand-700">
+              <option value="ALL">All 20 Books (001-1000)</option>
+            </select>
+          </div>
+
+          <div>
+            <select id="all-rcpt-filter-date" onchange="renderAllReceiptsTab()"
+              class="w-full min-h-[40px] px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-xs font-medium text-slate-700 focus:outline-none focus:border-brand-700">
+              <option value="ALL">All Dates</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Complete Receipts Table -->
+        <div class="overflow-x-auto max-h-[680px] overflow-y-auto">
+          <table class="w-full min-w-[1060px] text-left border-collapse">
+            <thead class="bg-slate-50 border-b border-slate-200 sticky top-0 z-10 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+              <tr>
+                <th class="py-3 px-3">A &middot; S.No</th>
+                <th class="py-3 px-3">B &middot; Rcpt</th>
+                <th class="py-3 px-3">C &middot; Date</th>
+                <th class="py-3 px-3">D &middot; Donor Name</th>
+                <th class="py-3 px-3">E &middot; Careoff</th>
+                <th class="py-3 px-3">F &middot; Address</th>
+                <th class="py-3 px-3">G &middot; Reference</th>
+                <th class="py-3 px-3">H &middot; Phone</th>
+                <th class="py-3 px-3">I &middot; Mode</th>
+                <th class="py-3 px-3 text-right">J &middot; Amount</th>
+                <th class="py-3 px-3">K &middot; Materials</th>
+                <th class="py-3 px-3 text-right">L &middot; Balance</th>
+                <th class="py-3 px-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="all-receipts-table-body" class="divide-y divide-slate-200 text-xs sm:text-sm"></tbody>
+            <tfoot id="all-receipts-table-foot" class="bg-slate-50 border-t-2 border-slate-200 font-semibold text-slatex-900 sticky bottom-0"></tfoot>
+          </table>
+        </div>
+      </div>
     </div>
 
     <!-- ========================================== -->
@@ -1033,18 +1145,21 @@
   </main>
 
   <!-- Mobile Bottom Navigation Bar -->
-  <nav class="md:hidden fixed bottom-0 inset-x-0 z-30 bg-white border-t border-slate-200 shadow-lg grid grid-cols-4 py-1.5 px-1.5 gap-1" aria-label="Mobile Navigation">
-    <button type="button" data-tab="receipts" class="nav-tab min-h-[42px] flex flex-col items-center justify-center py-1 rounded-lg text-brand-800 font-semibold text-[11px] cursor-pointer">
-      <span>Receipts</span>
+  <nav class="md:hidden fixed bottom-0 inset-x-0 z-30 bg-white border-t border-slate-200 shadow-lg grid grid-cols-5 py-1.5 px-1 gap-1" aria-label="Mobile Navigation">
+    <button type="button" data-tab="receipts" class="nav-tab min-h-[42px] flex flex-col items-center justify-center py-1 rounded-lg text-brand-800 font-semibold text-[10px] cursor-pointer">
+      <span>Entry</span>
     </button>
-    <button type="button" data-tab="dashboard" class="nav-tab min-h-[42px] flex flex-col items-center justify-center py-1 rounded-lg text-slate-500 font-medium text-[11px] cursor-pointer">
+    <button type="button" data-tab="all-receipts" class="nav-tab min-h-[42px] flex flex-col items-center justify-center py-1 rounded-lg text-slate-500 font-medium text-[10px] cursor-pointer">
+      <span>All Rcpts</span>
+    </button>
+    <button type="button" data-tab="dashboard" class="nav-tab min-h-[42px] flex flex-col items-center justify-center py-1 rounded-lg text-slate-500 font-medium text-[10px] cursor-pointer">
       <span>Dashboard</span>
     </button>
-    <button type="button" data-tab="requirements" class="nav-tab min-h-[42px] flex flex-col items-center justify-center py-1 rounded-lg text-slate-500 font-medium text-[11px] cursor-pointer">
+    <button type="button" data-tab="requirements" class="nav-tab min-h-[42px] flex flex-col items-center justify-center py-1 rounded-lg text-slate-500 font-medium text-[10px] cursor-pointer">
       <span>Items (53)</span>
     </button>
-    <button type="button" data-tab="export" class="nav-tab min-h-[42px] flex flex-col items-center justify-center py-1 rounded-lg text-slate-500 font-medium text-[11px] cursor-pointer">
-      <span>Sheet Sync</span>
+    <button type="button" data-tab="export" class="nav-tab min-h-[42px] flex flex-col items-center justify-center py-1 rounded-lg text-slate-500 font-medium text-[10px] cursor-pointer">
+      <span>Sync</span>
     </button>
   </nav>
 
@@ -1343,16 +1458,17 @@
 
   <script>
     // =========================================================================
-    // 1. MASTER CATALOGS (24 CAREOFFS, 20 RECEIPT BOOKS & 53 ITEMS)
+    // 1. MASTER CATALOGS & INITIAL WORKBOOK DATA
     // =========================================================================
     const STORAGE_KEY = 'sass_receipts_2026_v1';
+    const GS_CONFIG_KEY = 'sass_gs_oauth_config_v1';
+    const WA_CONFIG_KEY = 'sass_wa_cloud_config_v1';
 
     const CAREOFF_CATALOG = [
-      'Achu', 'Bala', 'Balu Swamy', 'DURGA BAI', 'Giri', 'Hari',
-      'Kandan', 'Kesavan', 'KPP', 'KSR', 'KSV', 'Kumar Gas',
-      'Kumaraguru', 'Latcha Swamy', 'Maharaja', 'Milk Gopu',
-      'Nandu', 'Nikhil', 'Pon Iyyappan', 'RCM RAVI', 'SD',
-      'Sridhar', 'Suresh', 'Thambi Swamy'
+      'Ayyappan', 'Balu Swamy', 'Baskar', 'Chandra', 'Chellappa', 'Dhanasekar',
+      'Ganesh', 'Guru', 'Hari', 'Iyer Urshavam - Hari', 'Karthik', 'Kesavan',
+      'KSR', 'KSV', 'Kumar', 'Maharaja', 'Mani', 'Murugan', 'Prakash',
+      'Raja', 'Ramesh', 'Senthil', 'Suresh', 'Venkatesh'
     ];
 
     const RECEIPT_BOOKS = Array.from({ length: 20 }, (_, i) => {
@@ -1366,145 +1482,248 @@
         start,
         end,
         rangeLabel: `${startStr}-${endStr}`,
-        label: `Book ${bookNo} (${startStr}–${endStr})`
+        label: `Book ${String(bookNo).padStart(2, '0')} (${startStr}-${endStr})`
       };
     });
 
-    function getReceiptBookNumber(receiptNoStr) {
-      const cleaned = String(receiptNoStr || '').trim();
+    const REQUIREMENTS_CATALOG = [
+      { id: 1, en: 'Rice', ta: 'அரிசி', required: 500, unit: 'kg', aliases: ['Ponni Rice', 'Raw Rice'] },
+      { id: 2, en: 'Rava', ta: 'ரவை', required: 50, unit: 'kg', aliases: ['Sooji', 'Suji'] },
+      { id: 3, en: 'Toor Dal', ta: 'துவரம் பருப்பு', required: 100, unit: 'kg', aliases: ['Thuvaram Paruppu'] },
+      { id: 4, en: 'Moong Dal', ta: 'பாசிப்பருப்பு', required: 50, unit: 'kg', aliases: ['Pasi Paruppu'] },
+      { id: 5, en: 'Urad Dal', ta: 'உளுத்தம் பருப்பு', required: 40, unit: 'kg', aliases: ['Ulutham Paruppu'] },
+      { id: 6, en: 'Chana Dal', ta: 'கடலைப்பருப்பு', required: 40, unit: 'kg', aliases: ['Kadalai Paruppu'] },
+      { id: 7, en: 'Sugar', ta: 'சர்க்கரை', required: 100, unit: 'kg', aliases: ['White Sugar'] },
+      { id: 8, en: 'Jaggery', ta: 'வெல்லம்', required: 100, unit: 'kg', aliases: ['Vellam', 'Paagu Vellam'] },
+      { id: 9, en: 'Ghee', ta: 'நெய்', required: 50, unit: 'kg', aliases: ['Pure Ghee', 'Cow Ghee'] },
+      { id: 10, en: 'Gingelly Oil', ta: 'நல்லெண்ணெய்', required: 60, unit: 'ltr', aliases: ['Sesame Oil', 'Nallennai'] },
+      { id: 11, en: 'Cooking Oil', ta: 'சமையல் எண்ணெய்', required: 100, unit: 'ltr', aliases: ['Sunflower Oil', 'Refined Oil'] },
+      { id: 12, en: 'Coconut Oil', ta: 'தேங்காய் எண்ணெய்', required: 30, unit: 'ltr', aliases: ['Thengai Ennai'] },
+      { id: 13, en: 'Cashew nuts', ta: 'முந்திரி', required: 15, unit: 'kg', aliases: ['Cashew', 'Munthiri'] },
+      { id: 14, en: 'Raisins', ta: 'உலர் திராட்சை', required: 15, unit: 'kg', aliases: ['Kismis', 'Dry Grapes'] },
+      { id: 15, en: 'Cardamom', ta: 'ஏலக்காய்', required: 3, unit: 'kg', aliases: ['Elakkai'] },
+      { id: 16, en: 'Camphor', ta: 'கற்பூரம்', required: 10, unit: 'kg', aliases: ['Karpooram'] },
+      { id: 17, en: 'Sandalwood Paste', ta: 'சந்தனம்', required: 5, unit: 'kg', aliases: ['Chandanam'] },
+      { id: 18, en: 'Kumkum', ta: 'குங்குமம்', required: 5, unit: 'kg', aliases: ['Kungumam'] },
+      { id: 19, en: 'Vibhuti', ta: 'விபூதி', required: 10, unit: 'kg', aliases: ['Sacred Ash'] },
+      { id: 20, en: 'Agarbathi', ta: 'ஊதுபத்தி', required: 20, unit: 'box', aliases: ['Incense Sticks'] },
+      { id: 21, en: 'Coconut', ta: 'தேங்காய்', required: 500, unit: 'nos', aliases: ['Thengai'] },
+      { id: 22, en: 'Banana', ta: 'வாழைப்பழம்', required: 1000, unit: 'nos', aliases: ['Vazhaipazham'] },
+      { id: 23, en: 'Banana Leaf', ta: 'வாழை இலை', required: 1500, unit: 'nos', aliases: ['Vazhai Ilai'] },
+      { id: 24, en: 'Betel Leaves', ta: 'வெற்றிலை', required: 500, unit: 'nos', aliases: ['Vetrilai'] },
+      { id: 25, en: 'Betel Nut', ta: 'பாக்கு', required: 5, unit: 'kg', aliases: ['Pakku'] },
+      { id: 26, en: 'Tamarind', ta: 'புளி', required: 40, unit: 'kg', aliases: ['Puli'] },
+      { id: 27, en: 'Salt', ta: 'உப்பு', required: 50, unit: 'kg', aliases: ['Crystal Salt', 'Table Salt'] },
+      { id: 28, en: 'Turmeric Powder', ta: 'மஞ்சள் தூள்', required: 10, unit: 'kg', aliases: ['Manjal Thool'] },
+      { id: 29, en: 'Chilli Powder', ta: 'மிளகாய் தூள்', required: 15, unit: 'kg', aliases: ['Milagai Thool'] },
+      { id: 30, en: 'Coriander Powder', ta: 'மல்லி தூள்', required: 15, unit: 'kg', aliases: ['Malli Thool'] },
+      { id: 31, en: 'Sambar Powder', ta: 'சாம்பார் பொடி', required: 20, unit: 'kg', aliases: ['Sambar Podi'] },
+      { id: 32, en: 'Rasam Powder', ta: 'ரசப்பொடி', required: 10, unit: 'kg', aliases: ['Rasam Podi'] },
+      { id: 33, en: 'Mustard Seeds', ta: 'கடுகு', required: 10, unit: 'kg', aliases: ['Kadugu'] },
+      { id: 34, en: 'Cumin Seeds', ta: 'சீரகம்', required: 10, unit: 'kg', aliases: ['Jeeragam'] },
+      { id: 35, en: 'Black Pepper', ta: 'மிளகு', required: 8, unit: 'kg', aliases: ['Milagu'] },
+      { id: 36, en: 'Fenugreek', ta: 'வெந்தயம்', required: 5, unit: 'kg', aliases: ['Vendhayam'] },
+      { id: 37, en: 'Asafoetida', ta: 'பெருங்காயம்', required: 3, unit: 'kg', aliases: ['Perungayam', 'Hing'] },
+      { id: 38, en: 'Aval (Poha)', ta: 'அவல்', required: 30, unit: 'kg', aliases: ['Flattened Rice'] },
+      { id: 39, en: 'Puffed Rice', ta: 'பொரி', required: 25, unit: 'kg', aliases: ['Pori'] },
+      { id: 40, en: 'Roasted Gram', ta: 'பொட்டுக்கடலை', required: 25, unit: 'kg', aliases: ['Pottukadalai'] },
+      { id: 41, en: 'Honey', ta: 'தேன்', required: 10, unit: 'ltr', aliases: ['Then'] },
+      { id: 42, en: 'Milk', ta: 'பால்', required: 200, unit: 'ltr', aliases: ['Paal'] },
+      { id: 43, en: 'Curd', ta: 'தயிர்', required: 100, unit: 'ltr', aliases: ['Thayir'] },
+      { id: 44, en: 'Rose Water', ta: 'பன்னீர்', required: 15, unit: 'ltr', aliases: ['Panneer'] },
+      { id: 45, en: 'Flowers / Garland', ta: 'பூ / மாலை', required: 50, unit: 'set', aliases: ['Poo', 'Malai', 'Garland'] },
+      { id: 46, en: 'Paper Cups', ta: 'பேப்பர் கப்', required: 3000, unit: 'nos', aliases: ['Tea Cups', 'Water Cups'] },
+      { id: 47, en: 'Water Cans (20L)', ta: 'குடிநீர் கேன்', required: 100, unit: 'nos', aliases: ['Drinking Water'] },
+      { id: 48, en: 'Firewood / Gas', ta: 'விறகு / கேஸ்', required: 10, unit: 'load', aliases: ['Gas Cylinder'] },
+      { id: 49, en: 'Avalakki / Appam Mix', ta: 'அப்பம் மாவு', required: 25, unit: 'kg', aliases: ['Appam'] },
+      { id: 50, en: 'Dry Ginger', ta: 'சுக்கு', required: 5, unit: 'kg', aliases: ['Sukku'] },
+      { id: 51, en: 'Dates', ta: 'பேரீச்சம்பழம்', required: 15, unit: 'kg', aliases: ['Perichampazham'] },
+      { id: 52, en: 'Sugar Candy', ta: 'கற்கண்டு', required: 15, unit: 'kg', aliases: ['Kalkandu'] },
+      { id: 53, en: 'Cotton Wicks', ta: 'பஞ்சு திரி', required: 20, unit: 'pkt', aliases: ['Thiri', 'Wicks'] }
+    ];
+
+    const INITIAL_RECEIPTS = [
+      { serialNo: 1, receiptNo: '', date: '2026-11-15', donorName: 'Vipin', careOf: 'Guru', address: '', reference: '', phoneNo: '9884127481', mode: 'Cash', amount: 0, materials: [] },
+      { serialNo: 2, receiptNo: '', date: '2026-11-15', donorName: 'Hari', careOf: '', address: '', reference: '', phoneNo: '7760555443', mode: 'Cash', amount: 0, materials: [] },
+      { serialNo: 3, receiptNo: '', date: '2026-11-15', donorName: 'Guru', careOf: '', address: '', reference: '', phoneNo: '', mode: 'Cash', amount: 0, materials: [] },
+      { serialNo: 4, receiptNo: '', date: '2026-11-15', donorName: 'Ranga', careOf: '', address: '', reference: '', phoneNo: '', mode: 'Annadhanam', amount: 0, materials: [{ itemId: 2, name: 'Rava', qty: 1, unit: 'kg' }] },
+      { serialNo: 5, receiptNo: '250', date: '2026-11-16', donorName: 'Dhall', careOf: '', address: '', reference: '', phoneNo: '7600000000', mode: 'Annadhanam', amount: 0, materials: [{ itemId: 1, name: 'Rice', qty: 10, unit: 'kg' }, { itemId: 2, name: 'Rava', qty: 5, unit: 'kg' }] },
+      { serialNo: 6, receiptNo: '999', date: '2026-11-16', donorName: 'Guru', careOf: '', address: '', reference: '', phoneNo: '9909090090', mode: 'Annadhanam', amount: 0, materials: [{ itemId: 13, name: 'Cashew nuts', qty: 11, unit: 'kg' }] }
+    ];
+
+    // =========================================================================
+    // 2. APPLICATION STATE & COLUMN MAPPING
+    // =========================================================================
+    let receipts = [];
+    let currentDraftMaterials = [];
+    let activeTab = 'receipts';
+    let recentLimit = 5;
+    let registerDisplayMode = 'feed';
+    let pendingDeleteSerialNo = null;
+    let gsAccessToken = null;
+    let gsTokenClient = null;
+    let gsAutoPullTimer = null;
+    let isGsSyncing = false;
+
+    // Default column mapping: A:Serial, B:Receipt, C:Date, D:Donor, E:Careoff, F:Address, G:Reference, H:Phone, I:Mode, J:Amount, K:Materials, L:Running
+    let gsColumnMap = {
+      serialNo: 0,
+      receiptNo: 1,
+      date: 2,
+      donorName: 3,
+      careOf: 4,
+      address: 5,
+      reference: 6,
+      phoneNo: 7,
+      mode: 8,
+      amount: 9,
+      materials: 10,
+      runningValue: 11
+    };
+
+    // =========================================================================
+    // 3. FORMATTING, PARSING & HELPER UTILITIES
+    // =========================================================================
+    function formatINR(val) {
+      const num = Number(val) || 0;
+      return '₹' + num.toLocaleString('en-IN');
+    }
+
+    function escapeHTML(str) {
+      return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function toDisplayDate(isoDate) {
+      if (!isoDate) return '';
+      const s = String(isoDate).trim();
+      if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+        const [y, m, d] = s.split('-');
+        return `${d}-${m}-${y}`;
+      }
+      return s;
+    }
+
+    function toISODate(rawDate) {
+      if (!rawDate) return new Date().toISOString().split('T')[0];
+      const s = String(rawDate).trim();
+      if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+      const dmy = s.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+      if (dmy) {
+        return `${dmy[3]}-${dmy[2].padStart(2, '0')}-${dmy[1].padStart(2, '0')}`;
+      }
+      return s;
+    }
+
+    function getReceiptBookNumber(receiptNo) {
+      const cleaned = String(receiptNo || '').trim();
       if (!/^\d+$/.test(cleaned)) return null;
       const num = parseInt(cleaned, 10);
       if (num < 1 || num > 1000) return null;
       return Math.ceil(num / 50);
     }
 
-    const REQUIREMENTS_CATALOG = [
-      { id: 1, en: 'Turmeric powder', ta: 'மஞ்சள் பொடி', required: 5, unit: 'kg', aliases: [] },
-      { id: 2, en: 'Raw rice', ta: 'பச்சரிசி', required: 390, unit: 'kg', aliases: ['Rice'] },
-      { id: 3, en: 'Toor dal', ta: 'துவரம் பருப்பு', required: 45, unit: 'kg', aliases: [] },
-      { id: 4, en: 'Chana dal', ta: 'கடலை பருப்பு', required: 15, unit: 'kg', aliases: [] },
-      { id: 5, en: 'Urad dal', ta: 'உளுத்தம் பருப்பு', required: 15, unit: 'kg', aliases: [] },
-      { id: 6, en: 'Moong dal', ta: 'பயத்தம் பருப்பு', required: 15, unit: 'kg', aliases: [] },
-      { id: 7, en: 'Cashew nuts', ta: 'முந்திரி பருப்பு', required: 5, unit: 'kg', aliases: [] },
-      { id: 8, en: 'Mustard seeds', ta: 'கடுகு', required: 4, unit: 'kg', aliases: [] },
-      { id: 9, en: 'Black pepper', ta: 'மிளகு', required: 4, unit: 'kg', aliases: [] },
-      { id: 10, en: 'Cumin seeds', ta: 'சீரகம்', required: 4, unit: 'kg', aliases: [] },
-      { id: 11, en: 'Fenugreek seeds', ta: 'வெந்தயம்', required: 2, unit: 'kg', aliases: [] },
-      { id: 12, en: 'Asafoetida block (LG)', ta: 'எல்.ஜி.கட்டி', required: 2, unit: 'kg', aliases: [] },
-      { id: 13, en: 'Asafoetida powder (LG)', ta: 'எல்.ஜி. தூள்', required: 2, unit: 'kg', aliases: [] },
-      { id: 14, en: 'Dry red chillies', ta: 'மிளகாய் வத்தல்', required: 10, unit: 'kg', aliases: [] },
-      { id: 15, en: 'Coriander seeds', ta: 'வெள்ளை தனியா', required: 6, unit: 'kg', aliases: [] },
-      { id: 16, en: 'Tamarind (new)', ta: 'புதிய புளி', required: 15, unit: 'kg', aliases: ['Tamarind'] },
-      { id: 17, en: 'Raisins', ta: 'திராட்சை', required: 5, unit: 'kg', aliases: [] },
-      { id: 18, en: 'Fried gram dal', ta: 'உடைத்த கடலை', required: 5, unit: 'kg', aliases: [] },
-      { id: 19, en: 'Gingelly oil (Idhayam)', ta: 'நல்லெண்ணெய் (இதயம்)', required: 15, unit: 'liters', aliases: ['Gingelly oil'] },
-      { id: 20, en: 'Sunflower oil', ta: 'ரீபைண்ட் ஆயில்', required: 30, unit: 'liters', aliases: ['Refined oil'] },
-      { id: 21, en: 'Cumin powder', ta: 'சீரகப் பொடி', required: 1, unit: 'kg', aliases: [] },
-      { id: 22, en: 'Coriander powder', ta: 'தனியா பொடி', required: 2, unit: 'kg', aliases: [] },
-      { id: 23, en: 'Chilli powder', ta: 'மிளகாய் பொடி', required: 3, unit: 'kg', aliases: [] },
-      { id: 24, en: 'Sambar powder', ta: 'சாம்பார் பொடி', required: 3, unit: 'kg', aliases: [] },
-      { id: 25, en: 'Rasam powder', ta: 'ரசப்பொடி', required: 2, unit: 'kg', aliases: [] },
-      { id: 26, en: 'Garam masala', ta: 'கரம் மசாலா', required: 1, unit: 'kg', aliases: [] },
-      { id: 27, en: 'Cardamom', ta: 'ஏலக்காய்', required: 0.5, unit: 'kg', aliases: [] },
-      { id: 28, en: 'Cloves', ta: 'கிராம்பு', required: 0.25, unit: 'kg', aliases: [] },
-      { id: 29, en: 'Cinnamon', ta: 'பட்டை', required: 0.25, unit: 'kg', aliases: [] },
-      { id: 30, en: 'Bay leaf', ta: 'பிரியாணி இலை', required: 0.25, unit: 'kg', aliases: [] },
-      { id: 31, en: 'Star anise', ta: 'அன்னாசிப்பூ', required: 0.25, unit: 'kg', aliases: [] },
-      { id: 32, en: 'Fennel seeds', ta: 'சோம்பு', required: 2, unit: 'kg', aliases: [] },
-      { id: 33, en: 'Poppy seeds', ta: 'கசகசா', required: 0.5, unit: 'kg', aliases: [] },
-      { id: 34, en: 'Jaggery (round)', ta: 'உருண்டை வெல்லம்', required: 60, unit: 'kg', aliases: ['Jaggery'] },
-      { id: 35, en: 'Sugar', ta: 'சர்க்கரை', required: 25, unit: 'kg', aliases: [] },
-      { id: 36, en: 'Crystal salt', ta: 'கல் உப்பு', required: 20, unit: 'kg', aliases: ['Salt'] },
-      { id: 37, en: 'Table salt', ta: 'தூள் உப்பு', required: 5, unit: 'kg', aliases: [] },
-      { id: 38, en: 'Rava (Sooji)', ta: 'ரவை', required: 25, unit: 'kg', aliases: ['Rava'] },
-      { id: 39, en: 'Semiya (Vermicelli)', ta: 'சேமியா', required: 15, unit: 'kg', aliases: ['Semiya'] },
-      { id: 40, en: 'Aval (Poha)', ta: 'அவல்', required: 10, unit: 'kg', aliases: ['Aval'] },
-      { id: 41, en: 'Maida', ta: 'மைதா', required: 10, unit: 'kg', aliases: [] },
-      { id: 42, en: 'Wheat flour (Atta)', ta: 'கோதுமை மாவு', required: 15, unit: 'kg', aliases: [] },
-      { id: 43, en: 'Besan (Gram flour)', ta: 'கடலை மாவு', required: 10, unit: 'kg', aliases: [] },
-      { id: 44, en: 'Rice flour', ta: 'அரிசி மாவு', required: 10, unit: 'kg', aliases: [] },
-      { id: 45, en: 'Ghee', ta: 'நெய்', required: 15, unit: 'liters', aliases: [] },
-      { id: 46, en: 'Appalam (papad)', ta: 'அப்பளம்', required: 15, unit: 'bundles', aliases: ['Appalam'] },
-      { id: 47, en: 'Pickle jar', ta: 'ஊறுகாய்', required: 5, unit: 'jars', aliases: ['Pickle'] },
-      { id: 48, en: 'Boiled rice (parboiled)', ta: 'புழுங்கல் அரிசி', required: 150, unit: 'kg', aliases: [] },
-      { id: 49, en: 'Camphor (Karpooram)', ta: 'கற்பூரம்', required: 3, unit: 'kg', aliases: ['Camphor'] },
-      { id: 50, en: 'Agarbatti (Incense)', ta: 'ஊதுபத்தி', required: 10, unit: 'boxes', aliases: [] },
-      { id: 51, en: 'Sandalwood paste / powder', ta: 'சந்தனம்', required: 2, unit: 'kg', aliases: [] },
-      { id: 52, en: 'Kumkum & Vibhuti', ta: 'குங்குமம் & விபூதி', required: 5, unit: 'packets', aliases: [] },
-      { id: 53, en: 'Lamp oil (Deepam oil)', ta: 'தீப எண்ணெய்', required: 15, unit: 'liters', aliases: [] }
-    ];
+    function getModeBadgeClasses(mode) {
+      switch (mode) {
+        case 'Cash': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+        case 'Online': return 'bg-blue-50 text-blue-700 border-blue-200';
+        case 'Cheque': return 'bg-purple-50 text-purple-700 border-purple-200';
+        case 'Annadhanam': return 'bg-amber-50 text-amber-800 border-amber-200';
+        case 'Pooja Items': return 'bg-rose-50 text-rose-700 border-rose-200';
+        default: return 'bg-slate-100 text-slate-700 border-slate-200';
+      }
+    }
 
-    const INITIAL_RECEIPTS = [
-      { serialNo: 1, receiptNo: '001', date: '2026-11-15', donorName: 'Subramanian', careOf: 'Guru', address: '', reference: '', phoneNo: '9840112233', amount: 100, mode: 'Cash', materials: [] },
-      { serialNo: 2, receiptNo: '002', date: '2026-11-15', donorName: 'Hari', careOf: 'Kandan', address: '', reference: '', phoneNo: '9840223344', amount: 5000, mode: 'Cash', materials: [] },
-      { serialNo: 3, receiptNo: '003', date: '2026-11-15', donorName: 'Guru', careOf: '', address: '', reference: '', phoneNo: '9840334455', amount: 200, mode: 'Online', materials: [] },
-      { serialNo: 4, receiptNo: '004', date: '2026-11-15', donorName: 'Ranga', careOf: 'Bala', address: '', reference: '', phoneNo: '9840445566', amount: 0, mode: 'Annadhanam', materials: [{ item: 'Rava', qty: 1, unit: 'kg' }] },
-      { serialNo: 5, receiptNo: '250', date: '2026-11-16', donorName: 'Dhall', careOf: 'Suresh', address: '', reference: '', phoneNo: '7600000000', amount: 0, mode: 'Annadhanam', materials: [{ item: 'Rice', qty: 10, unit: 'kg' }, { item: 'Rava', qty: 5, unit: 'kg' }] },
-      { serialNo: 6, receiptNo: '999', date: '2026-11-16', donorName: 'Guru', careOf: 'Sridhar', address: '', reference: '', phoneNo: '9909090090', amount: 0, mode: 'Annadhanam', materials: [{ item: 'Cashew nuts', qty: 11, unit: 'kg' }] }
-    ];
+    function formatMaterialsString(materials) {
+      if (!Array.isArray(materials) || materials.length === 0) return '';
+      return materials.map(m => `${m.name} - ${m.qty} ${m.unit}`).join(', ');
+    }
 
-    // =========================================================================
-    // 2. APPLICATION STATE & NORMALIZATION
-    // =========================================================================
-    let receipts = [];
-    let currentDraftMaterials = [];
-    let registerDisplayMode = 'feed';
-    let recentLimit = 5;
-    let activeTab = 'receipts';
-    let pendingDeleteSerial = null;
-    let currentWhatsAppReceipt = null;
-
-    function normalizeReceiptsData(rawList) {
-      const normalized = [];
-      const monetaryModes = ['Cash', 'Online', 'Cheque'];
-      const materialModes = ['Annadhanam', 'Pooja Items'];
-
-      (rawList || []).forEach(r => {
-        const amt = Math.max(0, Number(r.amount) || 0);
-        const mats = Array.isArray(r.materials) ? r.materials.filter(m => m && m.item && Number(m.qty) > 0) : [];
-        const base = {
-          receiptNo: String(r.receiptNo || '').trim(),
-          date: r.date || new Date().toISOString().split('T')[0],
-          donorName: String(r.donorName || '').trim() || 'Donor',
-          careOf: String(r.careOf || '').trim(),
-          address: String(r.address || '').trim(),
-          reference: String(r.reference || '').trim(),
-          phoneNo: String(r.phoneNo || '').replace(/\D/g, '').slice(-10)
-        };
-
-        if (amt > 0 && mats.length > 0) {
-          normalized.push({
-            ...base,
-            amount: amt,
-            mode: monetaryModes.includes(r.mode) ? r.mode : 'Cash',
-            materials: []
-          });
-          normalized.push({
-            ...base,
-            amount: 0,
-            mode: r.mode === 'Pooja Items' ? 'Pooja Items' : 'Annadhanam',
-            materials: mats
-          });
-        } else if (mats.length > 0 && amt === 0) {
-          normalized.push({
-            ...base,
-            amount: 0,
-            mode: materialModes.includes(r.mode) ? r.mode : 'Annadhanam',
-            materials: mats
-          });
-        } else {
-          normalized.push({
-            ...base,
-            amount: amt,
-            mode: monetaryModes.includes(r.mode) ? r.mode : 'Cash',
-            materials: []
-          });
+    function parseMaterialsString(str) {
+      if (!str) return [];
+      const raw = String(str).trim();
+      if (!raw || /^\d+(\.\d+)?$/.test(raw)) return [];
+      return raw.split(',').map(part => part.trim()).filter(Boolean).map(token => {
+        const match = token.match(/^(.+?)\s*-\s*([\d.]+)\s*(.*)$/);
+        if (match) {
+          const name = match[1].trim();
+          const qty = parseFloat(match[2]) || 0;
+          const unit = (match[3] || 'unit').trim();
+          const found = REQUIREMENTS_CATALOG.find(item =>
+            item.en.toLowerCase() === name.toLowerCase() ||
+            item.ta === name ||
+            item.aliases.some(a => a.toLowerCase() === name.toLowerCase())
+          );
+          return { itemId: found ? found.id : null, name: found ? found.en : name, qty, unit };
         }
+        return { itemId: null, name: token, qty: 1, unit: 'unit' };
+      });
+    }
+
+    function computeRequirementProgress() {
+      const totals = new Map();
+      REQUIREMENTS_CATALOG.forEach(item => totals.set(item.id, 0));
+
+      receipts.forEach(r => {
+        if (!Array.isArray(r.materials)) return;
+        r.materials.forEach(m => {
+          let targetId = m.itemId;
+          if (!targetId && m.name) {
+            const found = REQUIREMENTS_CATALOG.find(item =>
+              item.en.toLowerCase() === m.name.toLowerCase() ||
+              item.ta === m.name ||
+              item.aliases.some(a => a.toLowerCase() === m.name.toLowerCase())
+            );
+            if (found) targetId = found.id;
+          }
+          if (targetId && totals.has(targetId)) {
+            totals.set(targetId, totals.get(targetId) + (Number(m.qty) || 0));
+          }
+        });
       });
 
-      return normalized.map((item, idx) => ({
-        ...item,
-        serialNo: idx + 1
+      return REQUIREMENTS_CATALOG.map(item => {
+        const received = Math.round((totals.get(item.id) || 0) * 100) / 100;
+        const pending = Math.max(0, Math.round((item.required - received) * 100) / 100);
+        const pct = Math.min(100, Math.round((received / item.required) * 100));
+        let status = 'PENDING';
+        if (received >= item.required) status = 'FULFILLED';
+        else if (received > 0) status = 'PARTIAL';
+        return { ...item, received, pending, pct, status };
+      });
+    }
+
+    function getReceiptsWithRunningBalance() {
+      let running = 0;
+      return receipts.map((r, idx) => {
+        const amt = Number(r.amount) || 0;
+        running += amt;
+        return {
+          ...r,
+          serialNo: Number(r.serialNo) || (idx + 1),
+          runningBalance: running
+        };
+      });
+    }
+
+    function normalizeReceiptsData(list) {
+      if (!Array.isArray(list)) return [];
+      return list.map((item, idx) => ({
+        serialNo: Number(item.serialNo) || (idx + 1),
+        receiptNo: String(item.receiptNo ?? '').trim(),
+        date: toISODate(item.date),
+        donorName: String(item.donorName ?? '').trim(),
+        careOf: String(item.careOf ?? '').trim(),
+        address: String(item.address ?? '').trim(),
+        reference: String(item.reference ?? '').trim(),
+        phoneNo: String(item.phoneNo ?? '').replace(/\D/g, '').slice(-10),
+        mode: String(item.mode || 'Cash').trim(),
+        amount: Number(item.amount) || 0,
+        materials: Array.isArray(item.materials) ? item.materials : parseMaterialsString(item.materials)
       }));
     }
 
@@ -1518,737 +1737,72 @@
             return;
           }
         }
-      } catch (e) {
-        console.warn('Local storage unavailable, loading defaults.', e);
-      }
+      } catch (e) {}
       receipts = normalizeReceiptsData(INITIAL_RECEIPTS);
-      saveReceipts();
     }
 
     function saveReceipts() {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(receipts));
-      } catch (e) {
-        console.warn('Could not persist receipts to localStorage.', e);
-      }
-    }
-
-    function getReceiptsWithRunningBalance() {
-      let running = 0;
-      return receipts.map((r, index) => {
-        const amt = Number(r.amount) || 0;
-        running += amt;
-        return {
-          ...r,
-          serialNo: index + 1,
-          runningBalance: running
-        };
-      });
-    }
-
-    // =========================================================================
-    // 3. GOOGLE SHEETS DIRECT API v4 SYNC (NO APPS SCRIPT REQUIRED)
-    // =========================================================================
-    const GS_CONFIG_KEY = 'sass_gs_direct_config_v1';
-    const GS_SCOPE = 'https://www.googleapis.com/auth/spreadsheets';
-    let gsTokenClient = null;
-    let gsAccessToken = null;
-    let gsTokenExpiresAt = 0;
-    let gsIsPulling = false;
-    let gsIsWriting = false;
-    let gsPollIntervalId = null;
-
-    function getGoogleSheetsConfig() {
-      try {
-        const raw = localStorage.getItem(GS_CONFIG_KEY);
-        return raw ? JSON.parse(raw) : { spreadsheetId: '', sheetName: 'Receipts', clientId: '', autoSync: true };
-      } catch (e) {
-        return { spreadsheetId: '', sheetName: 'Receipts', clientId: '', autoSync: true };
-      }
-    }
-
-    function saveGoogleSheetsConfig(cfg) {
-      try {
-        localStorage.setItem(GS_CONFIG_KEY, JSON.stringify(cfg));
       } catch (e) {}
     }
 
-    function extractSpreadsheetId(input) {
-      const val = String(input || '').trim();
-      const match = val.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
-      return match ? match[1] : val;
-    }
-
-    function isGoogleSheetSignedIn() {
-      return Boolean(gsAccessToken && Date.now() < gsTokenExpiresAt - 15000);
-    }
-
-    function updateGoogleSheetsUIStatus() {
-      const cfg = getGoogleSheetsConfig();
-      const isSignedIn = isGoogleSheetSignedIn();
-      const dot = document.getElementById('header-sheets-dot');
-      const label = document.getElementById('header-sheets-label');
-      const liveBadge = document.getElementById('header-sheets-live-badge');
-      const pullBtn = document.getElementById('header-sheets-pull-btn');
-      const pushBtn = document.getElementById('header-sheets-push-btn');
-      const syncPill = document.getElementById('sync-tab-status-pill');
-
-      if (dot && label) {
-        if (isSignedIn && cfg.spreadsheetId) {
-          dot.className = 'w-2 h-2 rounded-full bg-emerald-400 shrink-0';
-          label.textContent = `Connected: ${cfg.sheetName || 'Receipts'}`;
-          if (liveBadge) liveBadge.classList.remove('hidden');
-          if (pullBtn) pullBtn.classList.remove('hidden');
-          if (pushBtn) pushBtn.classList.remove('hidden');
-          if (syncPill) {
-            syncPill.textContent = 'Connected (Live 5s Sync)';
-            syncPill.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200';
-          }
-        } else if (cfg.spreadsheetId && cfg.clientId) {
-          dot.className = 'w-2 h-2 rounded-full bg-amber-400 shrink-0';
-          label.textContent = 'Sign In to Sync Sheet';
-          if (liveBadge) liveBadge.classList.add('hidden');
-          if (pullBtn) pullBtn.classList.add('hidden');
-          if (pushBtn) pushBtn.classList.add('hidden');
-          if (syncPill) {
-            syncPill.textContent = 'Configured (Click Sign In)';
-            syncPill.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200';
-          }
-        } else {
-          dot.className = 'w-2 h-2 rounded-full bg-amber-400 shrink-0';
-          label.textContent = 'Connect Google Sheet';
-          if (liveBadge) liveBadge.classList.add('hidden');
-          if (pullBtn) pullBtn.classList.add('hidden');
-          if (pushBtn) pushBtn.classList.add('hidden');
-          if (syncPill) {
-            syncPill.textContent = 'Not Connected';
-            syncPill.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200';
-          }
-        }
-      }
-
-      const idEl = document.getElementById('sync-summary-sheet-id');
-      const rangeEl = document.getElementById('sync-summary-range');
-      const autoEl = document.getElementById('sync-summary-autosync');
-      if (idEl) idEl.textContent = cfg.spreadsheetId || 'Not set';
-      if (rangeEl) rangeEl.textContent = `${cfg.sheetName || 'Receipts'}!A1:L`;
-      if (autoEl) autoEl.textContent = isSignedIn ? 'Pulling every 5s + Instant Write' : (cfg.autoSync ? 'Enabled (Pulls every 5s once signed in)' : 'Manual Read/Write only');
-    }
-
-    // Header-aware column index map with separate Careoff (E), Address (F), and Reference (G) columns:
-    // A: Serial No, B: Receipt No, C: Date, D: Donor Name, E: Careoff, F: Address, G: Reference, H: Phone No, I: Mode, J: Amount, K: Materials, L: Running Value
-    let gsColumnMap = {
-      serialNo: 0,
-      receiptNo: 1,
-      date: 2,
-      donorName: 3,
-      careOf: 4,
-      address: 5,
-      reference: 6,
-      phoneNo: 7,
-      mode: 8,
-      amount: 9,
-      materials: 10,
-      balance: 11
-    };
-
-    function detectSheetColumnMap(headerRow) {
-      const map = { ...gsColumnMap };
-      if (!Array.isArray(headerRow) || headerRow.length === 0) return map;
-
-      headerRow.forEach((cell, idx) => {
-        const h = String(cell || '').trim().toLowerCase();
-        if (!h) return;
-        if (h.includes('serial') || h === 's.no' || h === 'sno') map.serialNo = idx;
-        else if (h.includes('receipt') || h === 'rcpt') map.receiptNo = idx;
-        else if (h === 'date') map.date = idx;
-        else if (h.includes('donor') || h === 'name') map.donorName = idx;
-        else if (h.includes('care')) map.careOf = idx;
-        else if (h.includes('addr')) map.address = idx;
-        else if (h.includes('ref') || h.includes('remark')) map.reference = idx;
-        else if (h.includes('phone') || h.includes('mobile')) map.phoneNo = idx;
-        else if (h === 'mode' || h.includes('payment')) map.mode = idx;
-        else if (h === 'amount' || h === 'amt') map.amount = idx;
-        else if (h.includes('material') || h.includes('item')) map.materials = idx;
-        else if (h.includes('running') || h.includes('bal')) map.balance = idx;
-      });
-      return map;
-    }
-
-    function buildSheetRowFromReceipt(r, runningBalance, colMap = gsColumnMap) {
-      const colCount = Math.max(12, ...Object.values(colMap).map(v => v + 1));
-      const row = new Array(colCount).fill('');
-      row[colMap.serialNo] = r.serialNo;
-      row[colMap.receiptNo] = r.receiptNo || '';
-      row[colMap.date] = toDisplayDate(r.date);
-      row[colMap.donorName] = r.donorName || '';
-      row[colMap.careOf] = r.careOf || '';
-      row[colMap.address] = r.address || '';
-      row[colMap.reference] = r.reference || '';
-      row[colMap.phoneNo] = r.phoneNo || '';
-      row[colMap.mode] = r.mode || 'Cash';
-      row[colMap.amount] = Number(r.amount) > 0 ? Number(r.amount) : '';
-      row[colMap.materials] = formatMaterialsString(r.materials);
-      row[colMap.balance] = runningBalance;
-      return row;
-    }
-
-    function openSheetsConnectModal() {
-      const cfg = getGoogleSheetsConfig();
-      const origin = window.location.origin;
-      const originEl = document.getElementById('gs-detected-origin');
-      const warnEl = document.getElementById('gs-origin-warning');
-      if (originEl) originEl.textContent = origin && origin !== 'null' ? origin : 'null (Sandboxed Preview)';
-      if (warnEl) {
-        if (!origin || origin === 'null' || origin.startsWith('file:')) {
-          warnEl.classList.remove('hidden');
-        } else {
-          warnEl.classList.add('hidden');
-        }
-      }
-      document.getElementById('gs-spreadsheet-input').value = cfg.spreadsheetId || '';
-      document.getElementById('gs-tab-name-input').value = cfg.sheetName || 'Receipts';
-      document.getElementById('gs-client-id-input').value = cfg.clientId || '';
-      document.getElementById('gs-auto-sync-checkbox').checked = cfg.autoSync !== false;
-      document.getElementById('sheets-connect-modal').classList.remove('hidden');
-    }
-
-    function closeSheetsConnectModal() {
-      document.getElementById('sheets-connect-modal').classList.add('hidden');
-    }
-
-    function copyDetectedOrigin() {
-      const origin = window.location.origin || '';
-      copyToClipboard(origin, `Copied origin "${origin}" to clipboard!`);
-    }
-
-    function disconnectGoogleSheet() {
-      gsAccessToken = null;
-      gsTokenExpiresAt = 0;
-      localStorage.removeItem(GS_CONFIG_KEY);
-      updateGoogleSheetsUIStatus();
-      closeSheetsConnectModal();
-      showToast('Disconnected from Google Sheets.', 'info');
-    }
-
-    function saveAndAuthorizeGoogleSheet() {
-      const spreadsheetId = extractSpreadsheetId(document.getElementById('gs-spreadsheet-input').value);
-      const sheetName = document.getElementById('gs-tab-name-input').value.trim() || 'Receipts';
-      const clientId = document.getElementById('gs-client-id-input').value.trim();
-      const autoSync = document.getElementById('gs-auto-sync-checkbox').checked;
-
-      if (!spreadsheetId || !clientId) {
-        showToast('Please enter both Google Sheet URL/ID and OAuth 2.0 Client ID.', 'error');
-        return;
-      }
-
-      const cfg = { spreadsheetId, sheetName, clientId, autoSync };
-      saveGoogleSheetsConfig(cfg);
-      updateGoogleSheetsUIStatus();
-
-      ensureGoogleAuthThen(async (token) => {
-        closeSheetsConnectModal();
-        showToast('Authorized with Google Sheets! Syncing...', 'info');
-        await fetchAndApplySheetRows(token, cfg, { silentIfEmpty: false });
-      });
-    }
-
-    function ensureGoogleAuthThen(callback) {
-      const cfg = getGoogleSheetsConfig();
-      if (!cfg.spreadsheetId || !cfg.clientId) {
-        openSheetsConnectModal();
-        return;
-      }
-      if (isGoogleSheetSignedIn()) {
-        callback(gsAccessToken, cfg);
-        return;
-      }
-      if (!window.google || !google.accounts || !google.accounts.oauth2) {
-        showToast('Google Sign-In library still loading. Please try again in 2 seconds.', 'error');
-        return;
-      }
-      try {
-        gsTokenClient = google.accounts.oauth2.initTokenClient({
-          client_id: cfg.clientId,
-          scope: GS_SCOPE,
-          callback: (resp) => {
-            if (resp && resp.access_token) {
-              gsAccessToken = resp.access_token;
-              gsTokenExpiresAt = Date.now() + (Number(resp.expires_in) || 3500) * 1000;
-              updateGoogleSheetsUIStatus();
-              callback(gsAccessToken, cfg);
-            } else {
-              showToast('Google authorization cancelled or failed.', 'error');
-            }
-          }
-        });
-        gsTokenClient.requestAccessToken({ prompt: '' });
-      } catch (err) {
-        showToast(`OAuth error: ${err.message}`, 'error');
-      }
-    }
-
-    function parseSheetDateToISO(rawDate) {
-      const s = String(rawDate || '').trim();
-      if (!s) return new Date().toISOString().split('T')[0];
-      if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
-      const dmy = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
-      if (dmy) {
-        return `${dmy[3]}-${dmy[2].padStart(2, '0')}-${dmy[1].padStart(2, '0')}`;
-      }
-      return new Date().toISOString().split('T')[0];
-    }
-
-    function parseSheetMaterialsString(rawMat) {
-      const s = String(rawMat || '').trim();
-      if (!s || s === '—') return [];
-      return s.split(',').map(part => {
-        const clean = part.trim();
-        const m = clean.match(/^(.+?)\s*-\s*([0-9.]+)\s*(.*)$/);
-        if (m) {
-          return { item: m[1].trim(), qty: parseFloat(m[2]) || 1, unit: (m[3] || 'unit').trim() };
-        }
-        return clean ? { item: clean, qty: 1, unit: 'unit' } : null;
-      }).filter(Boolean);
-    }
-
-    async function fetchAndApplySheetRows(token, cfg, { silentIfEmpty = false, isBackgroundPoll = false } = {}) {
-      if (gsIsPulling || gsIsWriting) return;
-      gsIsPulling = true;
-      try {
-        const range = encodeURIComponent(`${cfg.sheetName || 'Receipts'}!A1:M`);
-        const url = `https://sheets.googleapis.com/v4/spreadsheets/${cfg.spreadsheetId}/values/${range}`;
-        const res = await fetch(url, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (!res.ok) {
-          if (res.status === 401) {
-            gsAccessToken = null;
-            gsTokenExpiresAt = 0;
-            updateGoogleSheetsUIStatus();
-          }
-          const err = await res.json().catch(() => ({}));
-          throw new Error(err.error?.message || `HTTP ${res.status}`);
-        }
-        const data = await res.json();
-        const allValues = data.values || [];
-        if (allValues.length === 0) {
-          if (!silentIfEmpty && !isBackgroundPoll) {
-            showToast('Sheet is currently empty. Click Write Sheet to upload.', 'info');
-          }
-          return;
-        }
-
-        const firstRowStr = (allValues[0] || []).join(' ').toLowerCase();
-        const hasHeaderRow = firstRowStr.includes('donor') || firstRowStr.includes('serial') || firstRowStr.includes('mode');
-        if (hasHeaderRow) {
-          gsColumnMap = detectSheetColumnMap(allValues[0]);
-        }
-        const rows = hasHeaderRow ? allValues.slice(1) : allValues;
-
-        if (rows.length === 0) {
-          if (!silentIfEmpty && !isBackgroundPoll) {
-            showToast('Sheet has headers only (rows A2:L empty). Click Write Sheet to upload.', 'info');
-          }
-          return;
-        }
-
-        const knownModes = ['cash', 'online', 'cheque', 'annadhanam', 'pooja items'];
-        const parsed = rows
-          .filter(r => r && (r[gsColumnMap.donorName] || r[gsColumnMap.mode] || r[gsColumnMap.amount] || r[gsColumnMap.materials]))
-          .map((r, idx) => {
-            const rawCareOf = String(r[gsColumnMap.careOf] || '').trim();
-            let rawMode = String(r[gsColumnMap.mode] || '').trim();
-            let rawAmt = String(r[gsColumnMap.amount] || '').trim();
-            let rawPhone = String(r[gsColumnMap.phoneNo] || '').trim();
-            let rawAddr = String(r[gsColumnMap.address] || '').trim();
-            let rawRef = String(r[gsColumnMap.reference] || '').trim();
-            let rawMat = String(r[gsColumnMap.materials] || '').trim();
-
-            const colF = String(r[5] || '').trim();
-            const colG = String(r[6] || '').trim();
-            const colH = String(r[7] || '').trim();
-            const colI = String(r[8] || '').trim();
-            const colJ = String(r[9] || '').trim();
-            const colK = String(r[10] || '').trim();
-
-            if (!hasHeaderRow) {
-              if (knownModes.includes(colI.toLowerCase())) {
-                rawAddr = colF;
-                rawRef = colG;
-                rawPhone = colH;
-                rawMode = colI;
-                rawAmt = colJ;
-                rawMat = colK;
-              } else if (knownModes.includes(colH.toLowerCase())) {
-                const colFIsBalance = /^\d{1,3}(,\d{3})*(\.\d+)?$/.test(colF);
-                rawAddr = colFIsBalance ? colK : colF;
-                rawRef = '';
-                rawPhone = colG;
-                rawMode = colH;
-                rawAmt = colI;
-                rawMat = colJ;
-              } else if (knownModes.includes(colG.toLowerCase())) {
-                rawPhone = colF;
-                rawMode = colG;
-                rawAmt = colH;
-                rawMat = colI;
-                rawAddr = colK;
-                rawRef = '';
-              }
-            }
-
-            // Guard against a 10-digit phone number or swapped mode/amount landing in Amount
-            if (knownModes.includes(rawAmt.toLowerCase()) && !knownModes.includes(rawMode.toLowerCase())) {
-              const tmp = rawMode;
-              rawMode = rawAmt;
-              rawAmt = tmp;
-            }
-            const cleanAmtDigits = rawAmt.replace(/[^0-9.]/g, '');
-            let numericAmt = parseFloat(cleanAmtDigits) || 0;
-            // If rawAmt is an unformatted 10-digit mobile number (e.g. 9540702156) and Phone is empty, move it to Phone
-            if (/^[6-9]\d{9}$/.test(rawAmt.trim()) && !rawPhone) {
-              rawPhone = rawAmt.trim();
-              numericAmt = 0;
-            }
-
-            // If Materials contains only a plain number (e.g., "500" or "18501") and Amount is 0, treat it as Amount
-            if (/^\d+(\.\d+)?$/.test(rawMat) && numericAmt === 0) {
-              numericAmt = parseFloat(rawMat) || 0;
-              rawMat = '';
-            }
-
-            const cleanPhoneDigits = rawPhone.replace(/\D/g, '');
-            const validPhone = cleanPhoneDigits.length >= 10 ? cleanPhoneDigits.slice(-10) : '';
-
-            return {
-              serialNo: parseInt(r[gsColumnMap.serialNo], 10) || (idx + 1),
-              receiptNo: String(r[gsColumnMap.receiptNo] || '').trim(),
-              date: parseSheetDateToISO(r[gsColumnMap.date]),
-              donorName: String(r[gsColumnMap.donorName] || '').trim() || 'Donor',
-              careOf: rawCareOf,
-              address: rawAddr,
-              reference: rawRef,
-              phoneNo: validPhone,
-              mode: rawMode || 'Cash',
-              amount: numericAmt,
-              materials: parseSheetMaterialsString(rawMat)
-            };
-          });
-
-        if (parsed.length > 0) {
-          const prevSignature = JSON.stringify(receipts);
-          receipts = parsed.map((item, idx) => ({ ...item, serialNo: idx + 1 }));
-          const nextSignature = JSON.stringify(receipts);
-
-          if (prevSignature !== nextSignature) {
-            saveReceipts();
-            renderAll();
-            if (!isBackgroundPoll) {
-              showToast(`Loaded ${receipts.length} rows from "${cfg.sheetName || 'Receipts'}"!`);
-            }
-          } else if (!isBackgroundPoll) {
-            showToast(`Sheet is up to date (${receipts.length} rows).`);
-          }
-        }
-      } catch (err) {
-        if (!isBackgroundPoll) {
-          showToast(`Read Sheet failed: ${err.message}`, 'error');
-        }
-      } finally {
-        gsIsPulling = false;
-      }
-    }
-
-    function pullFromGoogleSheet() {
-      ensureGoogleAuthThen(async (token, cfg) => {
-        await fetchAndApplySheetRows(token, cfg, { silentIfEmpty: false, isBackgroundPoll: false });
-      });
-    }
-
-    function startGoogleSheetsAutoPull() {
-      if (gsPollIntervalId) clearInterval(gsPollIntervalId);
-      gsPollIntervalId = setInterval(() => {
-        const cfg = getGoogleSheetsConfig();
-        if (!cfg.spreadsheetId || !cfg.clientId || cfg.autoSync === false) return;
-        if (!isGoogleSheetSignedIn() || gsIsPulling || gsIsWriting) return;
-
-        const editSerial = document.getElementById('edit-serial-no')?.value;
-        const activeEl = document.activeElement;
-        const isTypingInForm = activeEl && activeEl.closest && activeEl.closest('#receipt-form');
-        if (editSerial || isTypingInForm) return;
-
-        fetchAndApplySheetRows(gsAccessToken, cfg, { silentIfEmpty: true, isBackgroundPoll: true });
-      }, 5000);
-    }
-
-    async function repairSwappedSheetColumns() {
-      ensureGoogleAuthThen(async (token, cfg) => {
-        showToast('Reading & fixing swapped Mode (G) and Amount (H) columns...', 'info');
-        await fetchAndApplySheetRows(token, cfg, { silentIfEmpty: true });
-        await pushAllToGoogleSheet(false);
-      });
-    }
-
-    async function pushAllToGoogleSheet(silentSuccess = false) {
-      ensureGoogleAuthThen(async (token, cfg) => {
-        gsIsWriting = true;
-        try {
-          const sheetTab = cfg.sheetName || 'Receipts';
-          const headerRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${cfg.spreadsheetId}/values/${encodeURIComponent(`${sheetTab}!A1:M1`)}`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          if (headerRes.ok) {
-            const hData = await headerRes.json();
-            if (hData.values && hData.values[0]) {
-              gsColumnMap = detectSheetColumnMap(hData.values[0]);
-            }
-          }
-
-          const clearRange = encodeURIComponent(`${sheetTab}!A2:M1000`);
-          await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${cfg.spreadsheetId}/values/${clearRange}:clear`, {
-            method: 'POST',
-            headers: { Authorization: `Bearer ${token}` }
-          });
-
-          const rowsWithBal = getReceiptsWithRunningBalance();
-          if (rowsWithBal.length > 0) {
-            const values = rowsWithBal.map(r => buildSheetRowFromReceipt(r, r.runningBalance, gsColumnMap));
-
-            const writeRange = encodeURIComponent(`${sheetTab}!A2:M${values.length + 1}`);
-            const writeUrl = `https://sheets.googleapis.com/v4/spreadsheets/${cfg.spreadsheetId}/values/${writeRange}?valueInputOption=USER_ENTERED`;
-            const res = await fetch(writeUrl, {
-              method: 'PUT',
-              headers: {
-                Authorization: `Bearer ${token}`,
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({ values })
-            });
-            if (!res.ok) {
-              const err = await res.json().catch(() => ({}));
-              throw new Error(err.error?.message || `HTTP ${res.status}`);
-            }
-          }
-
-          if (!silentSuccess) {
-            showToast(`Wrote ${rowsWithBal.length} rows to "${sheetTab}!A2:L"!`);
-          }
-        } catch (err) {
-          showToast(`Write Sheet failed: ${err.message}`, 'error');
-        } finally {
-          gsIsWriting = false;
-        }
-      });
-    }
-
-    async function appendNewRowsDirectlyToGoogleSheet(newRowsList) {
-      return new Promise((resolve) => {
-        ensureGoogleAuthThen(async (token, cfg) => {
-          gsIsWriting = true;
-          try {
-            const sheetTab = cfg.sheetName || 'Receipts';
-            const readRange = encodeURIComponent(`${sheetTab}!A1:M`);
-            const readRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${cfg.spreadsheetId}/values/${readRange}`, {
-              headers: { Authorization: `Bearer ${token}` }
-            });
-            if (!readRes.ok) {
-              const err = await readRes.json().catch(() => ({}));
-              throw new Error(err.error?.message || `HTTP ${readRes.status}`);
-            }
-            const readData = await readRes.json();
-            const allValues = readData.values || [];
-            const firstRowStr = (allValues[0] || []).join(' ').toLowerCase();
-            const hasHeaderRow = firstRowStr.includes('donor') || firstRowStr.includes('serial') || firstRowStr.includes('mode');
-            if (hasHeaderRow) {
-              gsColumnMap = detectSheetColumnMap(allValues[0]);
-            }
-            const existingSheetRows = (hasHeaderRow ? allValues.slice(1) : allValues)
-              .filter(r => r && (r[gsColumnMap.serialNo] || r[gsColumnMap.donorName] || r[gsColumnMap.mode] || r[gsColumnMap.amount] || r[gsColumnMap.materials]));
-
-            let lastSheetRowNo = 0;
-            let lastRunningBal = 0;
-            existingSheetRows.forEach((r, idx) => {
-              const sNo = parseInt(r[gsColumnMap.serialNo], 10) || (idx + 1);
-              if (sNo > lastSheetRowNo) lastSheetRowNo = sNo;
-
-              const rawAmt = String(r[gsColumnMap.amount] || '0').trim();
-              const rowAmt = parseFloat(rawAmt.replace(/[^0-9.]/g, '')) || 0;
-              lastRunningBal += rowAmt;
-            });
-
-            const assignedRows = newRowsList.map((row, idx) => {
-              const assignedSerialNo = lastSheetRowNo + idx + 1;
-              lastRunningBal += (Number(row.amount) || 0);
-              return {
-                ...row,
-                serialNo: assignedSerialNo,
-                runningBalance: lastRunningBal
-              };
-            });
-
-            const valuesToAppend = assignedRows.map(r => buildSheetRowFromReceipt(r, r.runningBalance, gsColumnMap));
-
-            const appendRange = encodeURIComponent(`${sheetTab}!A2:M`);
-            const appendUrl = `https://sheets.googleapis.com/v4/spreadsheets/${cfg.spreadsheetId}/values/${appendRange}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
-            const appendRes = await fetch(appendUrl, {
-              method: 'POST',
-              headers: {
-                Authorization: `Bearer ${token}`,
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({ values: valuesToAppend })
-            });
-
-            if (!appendRes.ok) {
-              const err = await appendRes.json().catch(() => ({}));
-              throw new Error(err.error?.message || `HTTP ${appendRes.status}`);
-            }
-
-            gsIsWriting = false;
-            await fetchAndApplySheetRows(token, cfg, { silentIfEmpty: true });
-            showToast(`Saved to Google Sheet at Row #${assignedRows[0].serialNo}${assignedRows.length > 1 ? ` & #${assignedRows[1].serialNo}` : ''}!`);
-            resolve(assignedRows);
-          } catch (err) {
-            gsIsWriting = false;
-            showToast(`Google Sheet Save failed: ${err.message}`, 'error');
-            resolve(null);
-          }
-        });
-      });
-    }
-
     // =========================================================================
-    // 4. FORMATTING & REQUIREMENT MATCHING HELPERS
-    // =========================================================================
-    function formatINR(num) {
-      return '₹' + (Number(num) || 0).toLocaleString('en-IN');
-    }
-
-    function toDisplayDate(isoDate) {
-      if (!isoDate) return '';
-      const parts = isoDate.split('-');
-      if (parts.length !== 3) return isoDate;
-      return `${parts[2]}-${parts[1]}-${parts[0]}`;
-    }
-
-    function formatMaterialsString(materialsArr) {
-      if (!Array.isArray(materialsArr) || materialsArr.length === 0) return '';
-      return materialsArr.map(m => `${m.item} - ${m.qty} ${m.unit}`).join(', ');
-    }
-
-    function escapeHTML(str) {
-      return String(str || '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-    }
-
-    function getModeBadgeClasses(mode) {
-      switch (mode) {
-        case 'Cash':
-          return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-        case 'Online':
-          return 'bg-blue-50 text-blue-700 border-blue-200';
-        case 'Cheque':
-          return 'bg-purple-50 text-purple-700 border-purple-200';
-        case 'Annadhanam':
-          return 'bg-amber-50 text-amber-800 border-amber-200';
-        case 'Pooja Items':
-          return 'bg-rose-50 text-rose-700 border-rose-200';
-        default:
-          return 'bg-slate-100 text-slate-700 border-slate-200';
-      }
-    }
-
-    function matchCatalogItem(rawName) {
-      const clean = String(rawName || '').trim().toLowerCase();
-      if (!clean) return null;
-      return REQUIREMENTS_CATALOG.find(req => {
-        if (req.en.toLowerCase() === clean) return true;
-        if (req.ta.toLowerCase() === clean) return true;
-        if (req.aliases.some(a => a.toLowerCase() === clean)) return true;
-        const baseEn = req.en.split('(')[0].trim().toLowerCase();
-        if (baseEn === clean) return true;
-        return false;
-      }) || null;
-    }
-
-    function computeRequirementProgress() {
-      const receivedMap = new Map();
-      REQUIREMENTS_CATALOG.forEach(item => receivedMap.set(item.id, 0));
-
-      receipts.forEach(r => {
-        (r.materials || []).forEach(m => {
-          const matched = matchCatalogItem(m.item);
-          if (matched) {
-            receivedMap.set(matched.id, (receivedMap.get(matched.id) || 0) + (Number(m.qty) || 0));
-          }
-        });
-      });
-
-      return REQUIREMENTS_CATALOG.map(req => {
-        const received = Math.round((receivedMap.get(req.id) || 0) * 100) / 100;
-        const pending = Math.max(0, Math.round((req.required - received) * 100) / 100);
-        let status = 'PENDING';
-        if (received >= req.required) status = 'FULFILLED';
-        else if (received > 0) status = 'PARTIAL';
-        return {
-          ...req,
-          received,
-          pending,
-          status,
-          pct: Math.min(100, Math.round((received / req.required) * 100))
-        };
-      });
-    }
-
-    // =========================================================================
-    // 5. FORM CONTROLS & DRAFT MATERIALS BUILDER
+    // 4. FORM CONTROLS, MATERIALS BUILDER & RECEIPT REGISTER RENDERING
     // =========================================================================
     function populateMaterialDropdown() {
       const select = document.getElementById('material-item-select');
-      const progressList = computeRequirementProgress();
-      const prevVal = select.value;
-
-      select.innerHTML = '<option value="">Choose from 53 Annadhanam / Pooja items...</option>';
-      progressList.forEach(item => {
-        const opt = document.createElement('option');
-        opt.value = item.id;
-        opt.textContent = `${item.id}. ${item.en} (${item.ta}) — Need: ${item.pending}/${item.required} ${item.unit}`;
-        select.appendChild(opt);
-      });
-
-      if (prevVal) select.value = prevVal;
+      if (!select) return;
+      const prev = select.value;
+      select.innerHTML = '<option value="">Choose item...</option>' +
+        REQUIREMENTS_CATALOG.map(item =>
+          `<option value="${item.id}">${item.id}. ${escapeHTML(item.en)} (${escapeHTML(item.ta)}) — ${item.unit}</option>`
+        ).join('');
+      if (prev) select.value = prev;
     }
 
     function populateDonorDatalist() {
-      const donorList = document.getElementById('donor-suggestions');
-      if (donorList) {
-        const uniqueDonors = [...new Set(receipts.map(r => r.donorName).filter(Boolean))].sort();
-        donorList.innerHTML = uniqueDonors.map(d => `<option value="${escapeHTML(d)}"></option>`).join('');
-      }
+      const donorDl = document.getElementById('donor-suggestions');
+      const careoffDl = document.getElementById('careoff-suggestions');
+      const addrDl = document.getElementById('address-suggestions');
+      const refDl = document.getElementById('reference-suggestions');
 
-      const careoffList = document.getElementById('careoff-suggestions');
-      if (careoffList) {
-        const dynamicCareoffs = receipts.map(r => (r.careOf || '').trim()).filter(Boolean);
-        const merged = [...new Set([...CAREOFF_CATALOG, ...dynamicCareoffs])];
-        careoffList.innerHTML = merged.map(c => `<option value="${escapeHTML(c)}"></option>`).join('');
+      if (donorDl) {
+        const donors = [...new Set(receipts.map(r => r.donorName).filter(Boolean))];
+        donorDl.innerHTML = donors.map(d => `<option value="${escapeHTML(d)}">`).join('');
       }
+      if (careoffDl) {
+        const allCareoffs = [...new Set([...CAREOFF_CATALOG, ...receipts.map(r => r.careOf).filter(Boolean)])];
+        careoffDl.innerHTML = allCareoffs.map(c => `<option value="${escapeHTML(c)}">`).join('');
+      }
+      if (addrDl) {
+        const addrs = [...new Set(receipts.map(r => r.address).filter(Boolean))];
+        addrDl.innerHTML = addrs.map(a => `<option value="${escapeHTML(a)}">`).join('');
+      }
+      if (refDl) {
+        const refs = [...new Set(receipts.map(r => r.reference).filter(Boolean))];
+        refDl.innerHTML = refs.map(ref => `<option value="${escapeHTML(ref)}">`).join('');
+      }
+    }
 
-      const addressList = document.getElementById('address-suggestions');
-      if (addressList) {
-        const uniqueAddresses = [...new Set(receipts.map(r => (r.address || '').trim()).filter(Boolean))].sort();
-        addressList.innerHTML = uniqueAddresses.map(a => `<option value="${escapeHTML(a)}"></option>`).join('');
-      }
+    function addQuickAmount(delta) {
+      const inp = document.getElementById('amount');
+      if (!inp) return;
+      const cur = Number(inp.value) || 0;
+      inp.value = cur + delta;
+      inp.dispatchEvent(new Event('input'));
+    }
 
-      const refList = document.getElementById('reference-suggestions');
-      if (refList) {
-        const uniqueRefs = [...new Set(receipts.map(r => (r.reference || '').trim()).filter(Boolean))].sort();
-        refList.innerHTML = uniqueRefs.map(ref => `<option value="${escapeHTML(ref)}"></option>`).join('');
-      }
+    function setPaymentMode(mode) {
+      const hidden = document.getElementById('payment-mode');
+      if (hidden) hidden.value = mode;
+      document.querySelectorAll('.mode-pill').forEach(btn => {
+        const isMatch = btn.dataset.mode === mode;
+        const colSpan = btn.dataset.mode === 'Pooja Items' ? 'col-span-2 sm:col-span-1 ' : '';
+        btn.className = isMatch
+          ? `mode-pill ${colSpan}min-h-[46px] px-4 py-2.5 rounded-xl text-sm font-semibold border transition cursor-pointer bg-brand-800 text-white border-brand-800 shadow-xs`
+          : `mode-pill ${colSpan}min-h-[46px] px-4 py-2.5 rounded-xl text-sm font-semibold border transition cursor-pointer bg-white text-slate-700 border-slate-300 hover:bg-slate-50`;
+      });
     }
 
     function updateSelectedMaterialHint() {
@@ -2256,43 +1810,34 @@
       const unitBadge = document.getElementById('material-unit-badge');
       const hintBox = document.getElementById('material-req-hint');
       const hintText = document.getElementById('material-req-hint-text');
-      if (!select) return;
+      if (!select || !unitBadge || !hintBox || !hintText) return;
 
       const id = Number(select.value);
       if (!id) {
-        if (unitBadge) unitBadge.textContent = 'unit';
-        if (hintBox) hintBox.classList.add('hidden');
+        unitBadge.textContent = 'unit';
+        hintBox.classList.add('hidden');
         return;
       }
 
-      const found = computeRequirementProgress().find(x => x.id === id);
-      if (!found) {
-        if (unitBadge) unitBadge.textContent = 'unit';
-        if (hintBox) hintBox.classList.add('hidden');
-        return;
-      }
+      const item = computeRequirementProgress().find(x => x.id === id);
+      if (!item) return;
 
-      if (unitBadge) unitBadge.textContent = found.unit;
-      if (hintText) {
-        hintText.textContent = `Required: ${found.required} ${found.unit} · Received: ${found.received} ${found.unit} · Pending: ${found.pending} ${found.unit}`;
-      }
-      if (hintBox) hintBox.classList.remove('hidden');
+      unitBadge.textContent = item.unit;
+      hintText.textContent = `Required: ${item.required} ${item.unit} · Received: ${item.received} ${item.unit} · Pending: ${item.pending} ${item.unit}`;
+      hintBox.classList.remove('hidden');
     }
 
     function renderDraftMaterials() {
       const container = document.getElementById('selected-materials-list');
+      if (!container) return;
       if (currentDraftMaterials.length === 0) {
         container.innerHTML = '';
         return;
       }
-
       container.innerHTML = currentDraftMaterials.map((m, idx) => `
-        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-900 border border-amber-200">
-          <span>${escapeHTML(m.item)} - <strong class="tabular-nums">${m.qty} ${escapeHTML(m.unit)}</strong></span>
-          <button type="button" onclick="removeDraftMaterial(${idx})" aria-label="Remove item"
-            class="w-4 h-4 rounded-full bg-amber-200/80 hover:bg-amber-300 text-amber-950 flex items-center justify-center text-[11px] font-bold cursor-pointer">
-            &times;
-          </button>
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 text-amber-900 border border-amber-200 text-xs font-medium">
+          <span>${escapeHTML(m.name)} - ${m.qty} ${escapeHTML(m.unit)}</span>
+          <button type="button" onclick="removeDraftMaterial(${idx})" class="text-amber-700 hover:text-red-600 font-bold cursor-pointer">&times;</button>
         </span>
       `).join('');
     }
@@ -2305,11 +1850,10 @@
 
       if (!id) {
         showToast('Please select a material item first.', 'error');
-        select.focus();
         return;
       }
       if (!qty || qty <= 0) {
-        showToast('Please enter a valid quantity greater than 0.', 'error');
+        showToast('Please enter a valid quantity.', 'error');
         qtyInput.focus();
         return;
       }
@@ -2317,21 +1861,20 @@
       const catalogItem = REQUIREMENTS_CATALOG.find(x => x.id === id);
       if (!catalogItem) return;
 
-      const shortName = catalogItem.aliases.length > 0 ? catalogItem.aliases[0] : catalogItem.en.split('(')[0].trim();
-
-      const existingIdx = currentDraftMaterials.findIndex(m => m.item.toLowerCase() === shortName.toLowerCase());
-      if (existingIdx >= 0) {
-        currentDraftMaterials[existingIdx].qty = Math.round((currentDraftMaterials[existingIdx].qty + qty) * 100) / 100;
+      const existing = currentDraftMaterials.find(m => m.itemId === id);
+      if (existing) {
+        existing.qty = Math.round((existing.qty + qty) * 100) / 100;
       } else {
         currentDraftMaterials.push({
-          item: shortName,
-          qty: Math.round(qty * 100) / 100,
+          itemId: catalogItem.id,
+          name: catalogItem.en,
+          qty,
           unit: catalogItem.unit
         });
       }
 
-      const currentMode = document.getElementById('payment-mode').value;
-      if (['Cash', 'Online', 'Cheque'].includes(currentMode)) {
+      const amt = Number(document.getElementById('amount').value) || 0;
+      if (amt === 0 && ['Cash', 'Online', 'Cheque'].includes(document.getElementById('payment-mode').value)) {
         setPaymentMode('Annadhanam');
       }
 
@@ -2344,38 +1887,9 @@
     function removeDraftMaterial(index) {
       currentDraftMaterials.splice(index, 1);
       renderDraftMaterials();
-
-      const amt = Number(document.getElementById('amount').value) || 0;
-      const currentMode = document.getElementById('payment-mode').value;
-      if (currentDraftMaterials.length === 0 && amt > 0 && ['Annadhanam', 'Pooja Items'].includes(currentMode)) {
-        setPaymentMode('Cash');
-      }
     }
 
-    function setPaymentMode(mode) {
-      document.getElementById('payment-mode').value = mode;
-      document.querySelectorAll('.mode-pill').forEach(btn => {
-        const isSelected = btn.dataset.mode === mode;
-        if (isSelected) {
-          btn.className = 'mode-pill min-h-[46px] px-4 py-2.5 rounded-xl text-sm font-semibold border transition cursor-pointer bg-brand-800 text-white border-brand-800 shadow-xs';
-        } else {
-          btn.className = 'mode-pill min-h-[46px] px-4 py-2.5 rounded-xl text-sm font-semibold border transition cursor-pointer bg-white text-slate-700 border-slate-300 hover:bg-slate-50';
-        }
-      });
-    }
-
-    function addQuickAmount(delta) {
-      const input = document.getElementById('amount');
-      const current = Number(input.value) || 0;
-      input.value = current + delta;
-
-      const currentMode = document.getElementById('payment-mode').value;
-      if (currentDraftMaterials.length === 0 && ['Annadhanam', 'Pooja Items'].includes(currentMode)) {
-        setPaymentMode('Cash');
-      }
-    }
-
-    function clearForm(resetDate = true) {
+    function clearForm(resetDate = false) {
       document.getElementById('edit-serial-no').value = '';
       document.getElementById('receipt-no').value = '';
       if (resetDate) {
@@ -2387,253 +1901,592 @@
       document.getElementById('receipt-reference').value = '';
       document.getElementById('phone-no').value = '';
       document.getElementById('amount').value = '';
-      document.getElementById('material-item-select').value = '';
-      document.getElementById('material-qty-input').value = '';
       currentDraftMaterials = [];
       renderDraftMaterials();
-      updateSelectedMaterialHint();
       setPaymentMode('Cash');
-
-      document.getElementById('donor-error').classList.add('hidden');
-      document.getElementById('phone-error').classList.add('hidden');
+      document.getElementById('donor-error')?.classList.add('hidden');
+      document.getElementById('phone-error')?.classList.add('hidden');
       document.getElementById('form-heading').textContent = 'New Receipt Entry';
-      document.getElementById('form-mode-indicator').className = 'w-2.5 h-2.5 rounded-full bg-brand-600 shrink-0';
-      document.getElementById('submit-btn').textContent = 'Add to sheet';
       document.getElementById('next-serial-badge').textContent = 'Auto on Save';
+      document.getElementById('submit-btn').textContent = 'Add to sheet';
     }
 
-    // =========================================================================
-    // 6. SAVE TO GOOGLE SHEET ON "ADD TO SHEET" BUTTON CLICK
-    // =========================================================================
-    async function saveToGoogleSheetOnClick(e) {
-      if (e) e.preventDefault();
+    function setRecentLimit(limit) {
+      recentLimit = limit;
+      [5, 10, 15].forEach(n => {
+        const btn = document.getElementById(`limit-btn-${n}`);
+        if (!btn) return;
+        btn.className = n === limit
+          ? 'min-h-[32px] px-2.5 py-1 rounded-md font-semibold bg-white text-slatex-900 shadow-2xs cursor-pointer'
+          : 'min-h-[32px] px-2.5 py-1 rounded-md font-semibold text-slate-600 hover:text-slatex-900 cursor-pointer';
+      });
+      renderReceiptsRegister();
+    }
 
-      const donorInput = document.getElementById('donor-name');
-      const phoneInput = document.getElementById('phone-no');
-      const donorError = document.getElementById('donor-error');
-      const phoneError = document.getElementById('phone-error');
+    function setRegisterDisplayMode(mode) {
+      registerDisplayMode = mode;
+      const feedBtn = document.getElementById('view-toggle-feed');
+      const tableBtn = document.getElementById('view-toggle-table');
+      const feedBox = document.getElementById('register-feed-container');
+      const tableBox = document.getElementById('register-table-container');
 
-      const donorName = donorInput.value.trim();
-      const rawPhone = phoneInput.value.replace(/\D/g, '');
-      phoneInput.value = rawPhone;
+      if (feedBtn && tableBtn) {
+        feedBtn.className = mode === 'feed'
+          ? 'min-h-[32px] px-2.5 py-1 rounded-md text-xs font-semibold bg-white text-slatex-900 shadow-2xs cursor-pointer'
+          : 'min-h-[32px] px-2.5 py-1 rounded-md text-xs font-semibold text-slate-600 hover:text-slatex-900 cursor-pointer';
+        tableBtn.className = mode === 'table'
+          ? 'min-h-[32px] px-2.5 py-1 rounded-md text-xs font-semibold bg-white text-slatex-900 shadow-2xs cursor-pointer'
+          : 'min-h-[32px] px-2.5 py-1 rounded-md text-xs font-semibold text-slate-600 hover:text-slatex-900 cursor-pointer';
+      }
+      if (feedBox) feedBox.classList.toggle('hidden', mode !== 'feed');
+      if (tableBox) tableBox.classList.toggle('hidden', mode !== 'table');
+    }
 
-      let valid = true;
-      if (!donorName) {
-        donorError.classList.remove('hidden');
-        donorInput.focus();
-        valid = false;
-      } else {
-        donorError.classList.add('hidden');
+    function renderReceiptsRegister() {
+      const allWithBal = getReceiptsWithRunningBalance();
+      const latest = [...allWithBal].reverse().slice(0, recentLimit);
+
+      const badge = document.getElementById('register-Showing-badge');
+      if (badge) badge.textContent = `Last ${latest.length} of ${allWithBal.length}`;
+
+      const feedContainer = document.getElementById('register-feed-container');
+      const tableBody = document.getElementById('register-table-body');
+      if (!feedContainer || !tableBody) return;
+
+      if (latest.length === 0) {
+        feedContainer.innerHTML = `<div class="p-8 text-center text-xs text-slate-500">No receipts logged yet.</div>`;
+        tableBody.innerHTML = `<tr><td colspan="13" class="py-8 text-center text-xs text-slate-500">No receipts logged yet.</td></tr>`;
+        return;
       }
 
-      if (rawPhone.length > 0 && rawPhone.length !== 10) {
-        phoneError.classList.remove('hidden');
-        if (valid) phoneInput.focus();
-        valid = false;
-      } else {
-        phoneError.classList.add('hidden');
-      }
+      feedContainer.innerHTML = latest.map(r => {
+        const matStr = formatMaterialsString(r.materials);
+        return `
+          <div class="p-3.5 sm:p-4 hover:bg-slate-50/80 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="space-y-1 min-w-0">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="font-mono text-xs font-bold text-slate-400 tabular-nums">#${r.serialNo}</span>
+                <span class="font-display font-bold text-sm sm:text-base text-slatex-900 truncate">${escapeHTML(r.donorName)}</span>
+                <span class="px-2 py-0.5 rounded-full text-[11px] font-semibold border ${getModeBadgeClasses(r.mode)}">${escapeHTML(r.mode)}</span>
+              </div>
+              <p class="text-xs text-slate-500">
+                ${toDisplayDate(r.date)}
+                ${r.receiptNo ? ` &middot; Receipt #${escapeHTML(r.receiptNo)}` : ''}
+                ${r.careOf ? ` &middot; C/o ${escapeHTML(r.careOf)}` : ''}
+                ${r.address ? ` &middot; ${escapeHTML(r.address)}` : ''}
+                ${r.reference ? ` &middot; Ref: ${escapeHTML(r.reference)}` : ''}
+              </p>
+              ${matStr ? `<div class="pt-0.5"><span class="inline-block px-2 py-0.5 rounded-md bg-amber-50 text-amber-900 border border-amber-200 text-xs font-medium">${escapeHTML(matStr)}</span></div>` : ''}
+            </div>
 
-      if (!valid) return;
+            <div class="flex sm:flex-col items-center sm:items-end justify-between gap-2 shrink-0">
+              <div class="text-left sm:text-right">
+                <div class="font-display font-bold text-base sm:text-lg ${Number(r.amount) > 0 ? 'text-slatex-900' : 'text-amber-700'} tabular-nums">
+                  ${Number(r.amount) > 0 ? formatINR(r.amount) : 'In-Kind'}
+                </div>
+                <div class="font-mono text-[11px] text-slate-400 tabular-nums">Bal: ${formatINR(r.runningBalance)}</div>
+              </div>
 
-      const receiptNo = document.getElementById('receipt-no').value.trim();
-      const date = document.getElementById('receipt-date').value || new Date().toISOString().split('T')[0];
-      const careOf = document.getElementById('care-of').value.trim();
-      const address = document.getElementById('donor-address').value.trim();
-      const reference = document.getElementById('receipt-reference').value.trim();
-      const amount = Math.max(0, Number(document.getElementById('amount').value) || 0);
-      const selectedMode = document.getElementById('payment-mode').value || 'Cash';
-      const mats = [...currentDraftMaterials];
-      const editSerial = parseInt(document.getElementById('edit-serial-no').value, 10);
+              <div class="flex items-center gap-1.5">
+                <button type="button" onclick="shareReceiptWhatsApp(${r.serialNo})"
+                  class="min-h-[32px] px-2.5 py-1 rounded-lg text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition cursor-pointer">
+                  WhatsApp
+                </button>
+                <button type="button" onclick="editReceiptRow(${r.serialNo})"
+                  class="min-h-[32px] px-2.5 py-1 rounded-lg text-xs font-semibold text-brand-700 bg-brand-50 hover:bg-brand-100 border border-brand-200 transition cursor-pointer inline-flex items-center gap-1">
+                  <span>&#9998;</span><span>Edit</span>
+                </button>
+                <button type="button" onclick="promptDeleteReceipt(${r.serialNo})"
+                  class="min-h-[32px] px-2.5 py-1 rounded-lg text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition cursor-pointer inline-flex items-center gap-1">
+                  <span>&#128465;</span><span>Delete</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
 
-      const monetaryModes = ['Cash', 'Online', 'Cheque'];
-      const materialModes = ['Annadhanam', 'Pooja Items'];
-      const rowsToInsert = [];
-
-      if (amount > 0 && mats.length > 0) {
-        rowsToInsert.push({
-          receiptNo,
-          date,
-          donorName,
-          careOf,
-          address,
-          reference,
-          phoneNo: rawPhone,
-          amount,
-          mode: monetaryModes.includes(selectedMode) ? selectedMode : 'Cash',
-          materials: []
-        });
-        rowsToInsert.push({
-          receiptNo,
-          date,
-          donorName,
-          careOf,
-          address,
-          reference,
-          phoneNo: rawPhone,
-          amount: 0,
-          mode: selectedMode === 'Pooja Items' ? 'Pooja Items' : 'Annadhanam',
-          materials: mats
-        });
-      } else if (mats.length > 0 && amount === 0) {
-        rowsToInsert.push({
-          receiptNo,
-          date,
-          donorName,
-          careOf,
-          address,
-          reference,
-          phoneNo: rawPhone,
-          amount: 0,
-          mode: materialModes.includes(selectedMode) ? selectedMode : 'Annadhanam',
-          materials: mats
-        });
-      } else {
-        rowsToInsert.push({
-          receiptNo,
-          date,
-          donorName,
-          careOf,
-          address,
-          reference,
-          phoneNo: rawPhone,
-          amount,
-          mode: monetaryModes.includes(selectedMode) ? selectedMode : 'Cash',
-          materials: []
-        });
-      }
-
-      const cfg = getGoogleSheetsConfig();
-      const autoWA = document.getElementById('auto-whatsapp-toggle')?.checked;
-      const submitBtn = document.getElementById('submit-btn');
-
-      if (!isNaN(editSerial) && editSerial > 0) {
-        const idx = receipts.findIndex(r => r.serialNo === editSerial);
-        if (idx >= 0) {
-          receipts.splice(idx, 1, ...rowsToInsert);
-          receipts = receipts.map((r, i) => ({ ...r, serialNo: i + 1 }));
-          saveReceipts();
-          renderAll();
-          clearForm(false);
-          showToast(`Updated Row #${editSerial}!`);
-          if (cfg.spreadsheetId && cfg.clientId) {
-            await pushAllToGoogleSheet(false);
-          }
-          if (autoWA && rawPhone.length === 10) {
-            triggerDirectWhatsAppSend(rowsToInsert[0]);
-          }
-          return;
-        }
-      }
-
-      if (cfg.spreadsheetId && cfg.clientId) {
-        if (submitBtn) {
-          submitBtn.disabled = true;
-          submitBtn.textContent = 'Saving to Google Sheet...';
-        }
-        try {
-          const savedRows = await appendNewRowsDirectlyToGoogleSheet(rowsToInsert);
-          if (savedRows && savedRows.length > 0) {
-            clearForm(false);
-            if (autoWA && rawPhone.length === 10) {
-              triggerDirectWhatsAppSend(savedRows[0]);
-            }
-          }
-        } finally {
-          if (submitBtn) {
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Add to sheet';
-          }
-        }
-      } else {
-        const startSerial = receipts.length + 1;
-        const addedLocal = rowsToInsert.map((r, i) => ({
-          ...r,
-          serialNo: startSerial + i
-        }));
-        receipts.push(...addedLocal);
-        saveReceipts();
-        renderAll();
-        clearForm(false);
-        showToast(`Saved locally as Row #${addedLocal[0].serialNo}. Connect Google Sheet in header to sync directly!`);
-        if (autoWA && rawPhone.length === 10) {
-          triggerDirectWhatsAppSend(addedLocal[0]);
-        }
-      }
+      tableBody.innerHTML = latest.map(r => `
+        <tr class="hover:bg-slate-50 transition">
+          <td class="py-2.5 px-3 font-mono text-xs text-slate-500 tabular-nums">${r.serialNo}</td>
+          <td class="py-2.5 px-3 font-mono text-xs text-slate-700 tabular-nums">${escapeHTML(r.receiptNo || '—')}</td>
+          <td class="py-2.5 px-3 font-mono text-xs text-slate-600 whitespace-nowrap tabular-nums">${toDisplayDate(r.date)}</td>
+          <td class="py-2.5 px-3 font-semibold text-slatex-900">${escapeHTML(r.donorName)}</td>
+          <td class="py-2.5 px-3 text-slate-600">${escapeHTML(r.careOf || '—')}</td>
+          <td class="py-2.5 px-3 text-xs text-slate-600 max-w-[140px] truncate">${escapeHTML(r.address || '—')}</td>
+          <td class="py-2.5 px-3 text-xs text-slate-600 max-w-[120px] truncate">${escapeHTML(r.reference || '—')}</td>
+          <td class="py-2.5 px-3 font-mono text-xs text-slate-600 tabular-nums">${escapeHTML(r.phoneNo || '—')}</td>
+          <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded-full text-[11px] font-semibold border ${getModeBadgeClasses(r.mode)}">${escapeHTML(r.mode)}</span></td>
+          <td class="py-2.5 px-3 text-right font-semibold text-slatex-900 tabular-nums">${Number(r.amount) > 0 ? formatINR(r.amount) : '—'}</td>
+          <td class="py-2.5 px-3 text-xs text-slate-700">${escapeHTML(formatMaterialsString(r.materials) || '—')}</td>
+          <td class="py-2.5 px-3 text-right font-mono text-xs font-semibold text-emerald-700 tabular-nums">${formatINR(r.runningBalance)}</td>
+          <td class="py-2.5 px-3 text-right whitespace-nowrap">
+            <div class="inline-flex items-center gap-1">
+              <button type="button" onclick="shareReceiptWhatsApp(${r.serialNo})"
+                class="px-2 py-1 rounded-md text-[11px] font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition cursor-pointer">
+                WA
+              </button>
+              <button type="button" onclick="editReceiptRow(${r.serialNo})"
+                class="px-2 py-1 rounded-md text-[11px] font-semibold text-brand-700 bg-brand-50 hover:bg-brand-100 border border-brand-200 transition cursor-pointer">
+                Edit
+              </button>
+              <button type="button" onclick="promptDeleteReceipt(${r.serialNo})"
+                class="px-2 py-1 rounded-md text-[11px] font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition cursor-pointer">
+                Delete
+              </button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
     }
 
     function editReceiptRow(serialNo) {
-      const target = receipts.find(r => r.serialNo === serialNo);
-      if (!target) return;
-
+      const found = receipts.find(r => r.serialNo === serialNo);
+      if (!found) return;
       switchTab('receipts');
-      document.getElementById('edit-serial-no').value = target.serialNo;
-      document.getElementById('receipt-no').value = target.receiptNo || '';
-      document.getElementById('receipt-date').value = target.date || '';
-      document.getElementById('donor-name').value = target.donorName || '';
-      document.getElementById('care-of').value = target.careOf || '';
-      document.getElementById('donor-address').value = target.address || '';
-      document.getElementById('receipt-reference').value = target.reference || '';
-      document.getElementById('phone-no').value = target.phoneNo || '';
-      document.getElementById('amount').value = Number(target.amount) > 0 ? Number(target.amount) : '';
-      setPaymentMode(target.mode || 'Cash');
 
-      currentDraftMaterials = Array.isArray(target.materials) ? JSON.parse(JSON.stringify(target.materials)) : [];
+      document.getElementById('edit-serial-no').value = found.serialNo;
+      document.getElementById('receipt-no').value = found.receiptNo || '';
+      document.getElementById('receipt-date').value = toISODate(found.date);
+      document.getElementById('donor-name').value = found.donorName || '';
+      document.getElementById('care-of').value = found.careOf || '';
+      document.getElementById('donor-address').value = found.address || '';
+      document.getElementById('receipt-reference').value = found.reference || '';
+      document.getElementById('phone-no').value = found.phoneNo || '';
+      document.getElementById('amount').value = Number(found.amount) > 0 ? found.amount : '';
+      setPaymentMode(found.mode || 'Cash');
+      currentDraftMaterials = JSON.parse(JSON.stringify(found.materials || []));
       renderDraftMaterials();
 
-      document.getElementById('form-heading').textContent = `Editing Row #${target.serialNo}`;
-      document.getElementById('form-mode-indicator').className = 'w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0';
-      document.getElementById('submit-btn').textContent = 'Update Row';
-      document.getElementById('next-serial-badge').textContent = `#${target.serialNo}`;
-      document.getElementById('donor-name').focus();
+      document.getElementById('form-heading').textContent = `Edit Receipt #${found.serialNo}`;
+      document.getElementById('next-serial-badge').textContent = `#${found.serialNo}`;
+      document.getElementById('submit-btn').textContent = 'Update Receipt';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     function promptDeleteReceipt(serialNo) {
-      pendingDeleteSerial = serialNo;
-      const target = receipts.find(r => r.serialNo === serialNo);
-      document.getElementById('delete-modal-desc').textContent = target
-        ? `Remove Row #${target.serialNo} (${target.donorName} — ${Number(target.amount) > 0 ? formatINR(target.amount) : formatMaterialsString(target.materials)}) and recalculate running balances?`
-        : 'Remove this row and recalculate running balances?';
-      document.getElementById('delete-modal').classList.remove('hidden');
+      const found = receipts.find(r => r.serialNo === serialNo);
+      if (!found) return;
+      pendingDeleteSerialNo = serialNo;
+      const desc = document.getElementById('delete-modal-desc');
+      if (desc) {
+        desc.textContent = `Delete Serial #${found.serialNo} (${found.donorName} · ${formatINR(found.amount)})? Running balances will recalculate.`;
+      }
+      document.getElementById('delete-modal')?.classList.remove('hidden');
     }
 
     function closeDeleteModal() {
-      pendingDeleteSerial = null;
-      document.getElementById('delete-modal').classList.add('hidden');
+      pendingDeleteSerialNo = null;
+      document.getElementById('delete-modal')?.classList.add('hidden');
     }
 
     async function confirmDeleteReceipt() {
-      if (pendingDeleteSerial === null) return;
+      if (pendingDeleteSerialNo === null) return;
+      const targetSerial = pendingDeleteSerialNo;
+      closeDeleteModal();
+
       receipts = receipts
-        .filter(r => r.serialNo !== pendingDeleteSerial)
+        .filter(r => r.serialNo !== targetSerial)
         .map((r, idx) => ({ ...r, serialNo: idx + 1 }));
       saveReceipts();
       renderAll();
-      closeDeleteModal();
-      showToast('Row deleted and running balance recalculated.');
+      showToast(`Deleted row #${targetSerial} and recalculated running balances.`);
 
       const cfg = getGoogleSheetsConfig();
-      if (cfg.spreadsheetId && cfg.clientId && isGoogleSheetSignedIn()) {
+      if (cfg.autoSync && gsAccessToken && cfg.spreadsheetId) {
         await pushAllToGoogleSheet(true);
       }
     }
 
-    // =========================================================================
-    // 7. WHATSAPP RECEIPT SHARING & CLOUD API INTEGRATION
-    // =========================================================================
-    const WA_CONFIG_KEY = 'sass_wa_cloud_config_v1';
+    async function saveToGoogleSheetOnClick(event) {
+      if (event && typeof event.preventDefault === 'function') event.preventDefault();
 
+      const donorName = document.getElementById('donor-name').value.trim();
+      const phoneNo = document.getElementById('phone-no').value.replace(/\D/g, '');
+      const donorErr = document.getElementById('donor-error');
+      const phoneErr = document.getElementById('phone-error');
+
+      if (!donorName) {
+        donorErr?.classList.remove('hidden');
+        document.getElementById('donor-name').focus();
+        return;
+      }
+      donorErr?.classList.add('hidden');
+
+      if (phoneNo && phoneNo.length !== 10) {
+        phoneErr?.classList.remove('hidden');
+        document.getElementById('phone-no').focus();
+        return;
+      }
+      phoneErr?.classList.add('hidden');
+
+      const editSerial = Number(document.getElementById('edit-serial-no').value) || 0;
+      const receiptNo = document.getElementById('receipt-no').value.trim();
+      const dateVal = document.getElementById('receipt-date').value || new Date().toISOString().split('T')[0];
+      const careOf = document.getElementById('care-of').value.trim();
+      const address = document.getElementById('donor-address').value.trim();
+      const reference = document.getElementById('receipt-reference').value.trim();
+      const amount = Number(document.getElementById('amount').value) || 0;
+      const mode = document.getElementById('payment-mode').value || 'Cash';
+      const materials = JSON.parse(JSON.stringify(currentDraftMaterials));
+
+      const cfg = getGoogleSheetsConfig();
+      const isConnected = Boolean(gsAccessToken && cfg.spreadsheetId);
+
+      if (editSerial > 0) {
+        const idx = receipts.findIndex(r => r.serialNo === editSerial);
+        if (idx !== -1) {
+          receipts[idx] = { serialNo: editSerial, receiptNo, date: dateVal, donorName, careOf, address, reference, phoneNo, mode, amount, materials };
+        }
+        saveReceipts();
+        renderAll();
+        clearForm(false);
+        showToast(`Updated Receipt #${editSerial} (${donorName}).`);
+        if (isConnected && cfg.autoSync) await pushAllToGoogleSheet(true);
+        return;
+      }
+
+      let assignedSerial = receipts.length > 0 ? Math.max(...receipts.map(r => Number(r.serialNo) || 0)) + 1 : 1;
+
+      if (isConnected) {
+        try {
+          await pullFromGoogleSheet(true);
+          assignedSerial = receipts.length > 0 ? Math.max(...receipts.map(r => Number(r.serialNo) || 0)) + 1 : 1;
+        } catch (e) {}
+      }
+
+      const newEntry = {
+        serialNo: assignedSerial,
+        receiptNo,
+        date: dateVal,
+        donorName,
+        careOf,
+        address,
+        reference,
+        phoneNo,
+        mode,
+        amount,
+        materials
+      };
+
+      receipts.push(newEntry);
+      saveReceipts();
+      renderAll();
+      clearForm(false);
+
+      if (isConnected) {
+        await pushAllToGoogleSheet(true);
+        showToast(`Saved Receipt #${assignedSerial} directly to Google Sheets!`);
+      } else {
+        showToast(`Saved Receipt #${assignedSerial} locally.`);
+      }
+
+      if (document.getElementById('auto-whatsapp-toggle')?.checked) {
+        triggerAutoWhatsAppForReceipt(newEntry);
+      }
+    }
+
+    // =========================================================================
+    // 5. GOOGLE SHEETS DIRECT OAUTH 2.0 READ / WRITE SYNC (NO APPS SCRIPT)
+    // =========================================================================
+    function getGoogleSheetsConfig() {
+      try {
+        const raw = localStorage.getItem(GS_CONFIG_KEY);
+        const parsed = raw ? JSON.parse(raw) : {};
+        return {
+          spreadsheetId: parsed.spreadsheetId || '',
+          sheetName: parsed.sheetName || 'Receipts',
+          clientId: parsed.clientId || '',
+          autoSync: parsed.autoSync !== false
+        };
+      } catch (e) {
+        return { spreadsheetId: '', sheetName: 'Receipts', clientId: '', autoSync: true };
+      }
+    }
+
+    function saveGoogleSheetsConfig(cfg) {
+      localStorage.setItem(GS_CONFIG_KEY, JSON.stringify(cfg));
+    }
+
+    function extractSpreadsheetId(input) {
+      const s = String(input || '').trim();
+      const match = s.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+      return match ? match[1] : s;
+    }
+
+    function openSheetsConnectModal() {
+      const cfg = getGoogleSheetsConfig();
+      const sheetInp = document.getElementById('gs-spreadsheet-input');
+      const tabInp = document.getElementById('gs-tab-name-input');
+      const clientInp = document.getElementById('gs-client-id-input');
+      const autoChk = document.getElementById('gs-auto-sync-checkbox');
+      const originEl = document.getElementById('gs-detected-origin');
+      const warnEl = document.getElementById('gs-origin-warning');
+
+      if (sheetInp) sheetInp.value = cfg.spreadsheetId;
+      if (tabInp) tabInp.value = cfg.sheetName || 'Receipts';
+      if (clientInp) clientInp.value = cfg.clientId;
+      if (autoChk) autoChk.checked = cfg.autoSync !== false;
+
+      const origin = window.location.origin;
+      if (originEl) originEl.textContent = origin || 'null (sandboxed preview)';
+      if (warnEl) warnEl.classList.toggle('hidden', Boolean(origin && origin !== 'null' && !origin.includes('usercontent.goog')));
+
+      document.getElementById('sheets-connect-modal')?.classList.remove('hidden');
+    }
+
+    function closeSheetsConnectModal() {
+      document.getElementById('sheets-connect-modal')?.classList.add('hidden');
+    }
+
+    function copyDetectedOrigin() {
+      copyToClipboard(window.location.origin, 'Copied origin URL for Google Cloud Console!');
+    }
+
+    function disconnectGoogleSheet() {
+      gsAccessToken = null;
+      localStorage.removeItem(GS_CONFIG_KEY);
+      updateGoogleSheetsUIStatus();
+      closeSheetsConnectModal();
+      showToast('Disconnected Google Sheet.', 'info');
+    }
+
+    function updateGoogleSheetsUIStatus() {
+      const cfg = getGoogleSheetsConfig();
+      const dot = document.getElementById('header-sheets-dot');
+      const label = document.getElementById('header-sheets-label');
+      const liveBadge = document.getElementById('header-sheets-live-badge');
+      const pullBtn = document.getElementById('header-sheets-pull-btn');
+      const pushBtn = document.getElementById('header-sheets-push-btn');
+      const pill = document.getElementById('sync-tab-status-pill');
+      const sumId = document.getElementById('sync-summary-sheet-id');
+      const sumRange = document.getElementById('sync-summary-range');
+
+      if (sumId) sumId.textContent = cfg.spreadsheetId || 'Not set';
+      if (sumRange) sumRange.textContent = `${cfg.sheetName || 'Receipts'}!A2:L`;
+
+      const connected = Boolean(gsAccessToken && cfg.spreadsheetId);
+      if (dot) dot.className = `w-2 h-2 rounded-full shrink-0 ${connected ? 'bg-emerald-400' : 'bg-amber-400'}`;
+      if (label) label.textContent = connected ? `Connected: ${cfg.sheetName}` : (cfg.spreadsheetId ? 'Sign In to Sync' : 'Connect Google Sheet');
+      if (liveBadge) liveBadge.classList.toggle('hidden', !(connected && cfg.autoSync));
+      if (pullBtn) pullBtn.classList.toggle('hidden', !connected);
+      if (pushBtn) pushBtn.classList.toggle('hidden', !connected);
+
+      if (pill) {
+        pill.textContent = connected ? 'Connected & Live' : 'Not Connected';
+        pill.className = connected
+          ? 'px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200'
+          : 'px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200';
+      }
+    }
+
+    function saveAndAuthorizeGoogleSheet() {
+      const spreadsheetId = extractSpreadsheetId(document.getElementById('gs-spreadsheet-input').value);
+      const sheetName = (document.getElementById('gs-tab-name-input').value || 'Receipts').trim();
+      const clientId = (document.getElementById('gs-client-id-input').value || '').trim();
+      const autoSync = document.getElementById('gs-auto-sync-checkbox').checked;
+
+      if (!spreadsheetId || !clientId) {
+        showToast('Please enter both the Google Sheet URL/ID and OAuth Client ID.', 'error');
+        return;
+      }
+
+      saveGoogleSheetsConfig({ spreadsheetId, sheetName, clientId, autoSync });
+      updateGoogleSheetsUIStatus();
+
+      if (!window.google || !google.accounts || !google.accounts.oauth2) {
+        showToast('Google Identity script is still loading. Try again in 2 seconds.', 'error');
+        return;
+      }
+
+      gsTokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: clientId,
+        scope: 'https://www.googleapis.com/auth/spreadsheets',
+        callback: async (tokenResponse) => {
+          if (tokenResponse && tokenResponse.access_token) {
+            gsAccessToken = tokenResponse.access_token;
+            updateGoogleSheetsUIStatus();
+            closeSheetsConnectModal();
+            showToast('Authorized with Google Sheets!');
+            await pullFromGoogleSheet();
+          } else {
+            showToast('Google OAuth authorization failed.', 'error');
+          }
+        }
+      });
+
+      gsTokenClient.requestAccessToken({ prompt: 'consent' });
+    }
+
+    function detectColumnMapFromHeaders(headerRow) {
+      if (!Array.isArray(headerRow) || headerRow.length === 0) return;
+      const findIdx = (patterns, fallback) => {
+        const idx = headerRow.findIndex(h => patterns.some(p => String(h || '').toLowerCase().includes(p)));
+        return idx !== -1 ? idx : fallback;
+      };
+      gsColumnMap = {
+        serialNo: findIdx(['serial', 's.no'], 0),
+        receiptNo: findIdx(['receipt'], 1),
+        date: findIdx(['date'], 2),
+        donorName: findIdx(['donor', 'name'], 3),
+        careOf: findIdx(['care'], 4),
+        address: findIdx(['address'], 5),
+        reference: findIdx(['reference', 'ref'], 6),
+        phoneNo: findIdx(['phone', 'mobile'], 7),
+        mode: findIdx(['mode'], 8),
+        amount: findIdx(['amount', 'value'], 9),
+        materials: findIdx(['material', 'item'], 10),
+        runningValue: findIdx(['running', 'balance'], 11)
+      };
+    }
+
+    function buildSheetRowFromReceipt(r, runningBal, colMap) {
+      const row = new Array(12).fill('');
+      row[colMap.serialNo] = r.serialNo;
+      row[colMap.receiptNo] = r.receiptNo || '';
+      row[colMap.date] = toDisplayDate(r.date);
+      row[colMap.donorName] = r.donorName || '';
+      row[colMap.careOf] = r.careOf || '';
+      row[colMap.address] = r.address || '';
+      row[colMap.reference] = r.reference || '';
+      row[colMap.phoneNo] = r.phoneNo || '';
+      row[colMap.mode] = r.mode || 'Cash';
+      row[colMap.amount] = Number(r.amount) || 0;
+      row[colMap.materials] = formatMaterialsString(r.materials);
+      row[colMap.runningValue] = runningBal;
+      return row;
+    }
+
+    async function pullFromGoogleSheet(silent = false) {
+      const cfg = getGoogleSheetsConfig();
+      if (!gsAccessToken || !cfg.spreadsheetId) {
+        if (!silent) openSheetsConnectModal();
+        return;
+      }
+      if (isGsSyncing) return;
+      isGsSyncing = true;
+
+      try {
+        const range = encodeURIComponent(`${cfg.sheetName}!A1:L1000`);
+        const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${cfg.spreadsheetId}/values/${range}`, {
+          headers: { Authorization: `Bearer ${gsAccessToken}` }
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error?.message || 'Failed to read Google Sheet');
+
+        const rows = data.values || [];
+        if (rows.length > 0) {
+          detectColumnMapFromHeaders(rows[0]);
+        }
+
+        const validModes = ['Cash', 'Online', 'Cheque', 'Annadhanam', 'Pooja Items'];
+        const parsedRows = rows.slice(1)
+          .filter(row => row && row.some(cell => String(cell || '').trim() !== ''))
+          .map((row, idx) => {
+            let modeVal = String(row[gsColumnMap.mode] || 'Cash').trim();
+            let amtRaw = String(row[gsColumnMap.amount] || '0').replace(/[^\d.]/g, '');
+            let amtVal = parseFloat(amtRaw) || 0;
+
+            if (validModes.includes(String(row[gsColumnMap.amount] || '').trim()) && !validModes.includes(modeVal)) {
+              const swappedAmt = parseFloat(String(row[gsColumnMap.mode] || '0').replace(/[^\d.]/g, '')) || 0;
+              modeVal = String(row[gsColumnMap.amount]).trim();
+              amtVal = swappedAmt;
+            }
+
+            return {
+              serialNo: Number(row[gsColumnMap.serialNo]) || (idx + 1),
+              receiptNo: String(row[gsColumnMap.receiptNo] || '').trim(),
+              date: toISODate(row[gsColumnMap.date]),
+              donorName: String(row[gsColumnMap.donorName] || '').trim(),
+              careOf: String(row[gsColumnMap.careOf] || '').trim(),
+              address: String(row[gsColumnMap.address] || '').trim(),
+              reference: String(row[gsColumnMap.reference] || '').trim(),
+              phoneNo: String(row[gsColumnMap.phoneNo] || '').replace(/\D/g, '').slice(-10),
+              mode: modeVal || 'Cash',
+              amount: amtVal,
+              materials: parseMaterialsString(row[gsColumnMap.materials])
+            };
+          });
+
+        if (parsedRows.length > 0) {
+          receipts = normalizeReceiptsData(parsedRows);
+          saveReceipts();
+          renderAll();
+        }
+        if (!silent) showToast(`Pulled ${parsedRows.length} rows from ${cfg.sheetName}!`);
+      } catch (err) {
+        if (!silent) showToast(`Read failed: ${err.message}`, 'error');
+      } finally {
+        isGsSyncing = false;
+      }
+    }
+
+    async function pushAllToGoogleSheet(silent = false) {
+      const cfg = getGoogleSheetsConfig();
+      if (!gsAccessToken || !cfg.spreadsheetId) {
+        if (!silent) openSheetsConnectModal();
+        return;
+      }
+      if (isGsSyncing) return;
+      isGsSyncing = true;
+
+      try {
+        const rowsWithBal = getReceiptsWithRunningBalance();
+        const values = rowsWithBal.map(r => buildSheetRowFromReceipt(r, r.runningBalance, gsColumnMap));
+        const endRow = Math.max(values.length + 1, 2);
+        const range = encodeURIComponent(`${cfg.sheetName}!A2:L${endRow}`);
+
+        const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${cfg.spreadsheetId}/values/${range}?valueInputOption=USER_ENTERED`, {
+          method: 'PUT',
+          headers: {
+            Authorization: `Bearer ${gsAccessToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ values })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error?.message || 'Failed to write to Google Sheet');
+
+        if (!silent) showToast(`Synced ${values.length} rows to ${cfg.sheetName}!`);
+      } catch (err) {
+        if (!silent) showToast(`Write failed: ${err.message}`, 'error');
+      } finally {
+        isGsSyncing = false;
+      }
+    }
+
+    async function repairSwappedSheetColumns() {
+      await pullFromGoogleSheet(true);
+      await pushAllToGoogleSheet(false);
+    }
+
+    function startGoogleSheetsAutoPull() {
+      if (gsAutoPullTimer) clearInterval(gsAutoPullTimer);
+      gsAutoPullTimer = setInterval(() => {
+        const cfg = getGoogleSheetsConfig();
+        const activeEl = document.activeElement;
+        const isTyping = activeEl && ['INPUT', 'TEXTAREA', 'SELECT'].includes(activeEl.tagName);
+        if (gsAccessToken && cfg.spreadsheetId && cfg.autoSync && !isTyping && !isGsSyncing) {
+          pullFromGoogleSheet(true);
+        }
+      }, 5000);
+    }
+
+    // =========================================================================
+    // 6. WHATSAPP RECEIPT SHARING & CLOUD API / WEBHOOK DELIVERY
+    // =========================================================================
     function getWhatsAppConfig() {
       try {
         const raw = localStorage.getItem(WA_CONFIG_KEY);
-        return raw ? JSON.parse(raw) : {
-          mode: 'deeplink',
-          phoneId: '',
-          accessToken: '',
-          templateName: '',
-          templateLang: 'en_US',
-          webhookUrl: '',
-          webhookToken: ''
+        const parsed = raw ? JSON.parse(raw) : {};
+        return {
+          mode: parsed.mode || 'deeplink',
+          phoneId: parsed.phoneId || '',
+          accessToken: parsed.accessToken || '',
+          templateName: parsed.templateName || '',
+          templateLang: parsed.templateLang || 'en_US',
+          webhookUrl: parsed.webhookUrl || '',
+          webhookToken: parsed.webhookToken || ''
         };
       } catch (e) {
         return { mode: 'deeplink', phoneId: '', accessToken: '', templateName: '', templateLang: 'en_US', webhookUrl: '', webhookToken: '' };
@@ -2643,19 +2496,76 @@
     function updateWhatsAppSetupBadge() {
       const cfg = getWhatsAppConfig();
       const label = document.getElementById('wa-setup-label');
-      const dot = document.getElementById('wa-setup-dot');
-      if (!label || !dot) return;
-
-      if (cfg.mode === 'cloud_api' && cfg.phoneId && cfg.accessToken) {
-        label.textContent = 'WhatsApp: Meta Cloud API';
-        dot.className = 'w-1.5 h-1.5 rounded-full bg-blue-600';
-      } else if (cfg.mode === 'webhook' && cfg.webhookUrl) {
-        label.textContent = 'WhatsApp: Gateway Webhook';
-        dot.className = 'w-1.5 h-1.5 rounded-full bg-purple-600';
-      } else {
-        label.textContent = 'WhatsApp Setup (Direct App)';
-        dot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-600';
+      const cloudBtn = document.getElementById('wa-cloud-send-btn');
+      if (label) {
+        const names = { deeplink: 'WhatsApp Setup (Direct App)', cloud_api: 'WhatsApp Setup (Cloud API)', webhook: 'WhatsApp Setup (Webhook)' };
+        label.textContent = names[cfg.mode] || 'WhatsApp Setup (Direct App)';
       }
+      if (cloudBtn) {
+        cloudBtn.classList.toggle('hidden', cfg.mode === 'deeplink');
+      }
+    }
+
+    function buildWhatsAppReceiptMessage(r) {
+      const matStr = formatMaterialsString(r.materials);
+      const lines = [
+        'Swamiye Saranam Ayyappa!',
+        'Sri Ayyappa Swami Seva Sangam — Receipt 2026',
+        `Receipt No: ${r.receiptNo || '#' + r.serialNo}`,
+        `Date: ${toDisplayDate(r.date)}`,
+        `Donor: ${r.donorName}`,
+        Number(r.amount) > 0 ? `Amount: ${formatINR(r.amount)} (${r.mode})` : `Contribution: ${r.mode}`,
+        matStr ? `Materials: ${matStr}` : '',
+        'Thank you for your kind contribution!'
+      ].filter(Boolean);
+      return lines.join('\n');
+    }
+
+    function shareReceiptWhatsApp(serialNo) {
+      const found = receipts.find(r => r.serialNo === serialNo);
+      if (!found) return;
+      document.getElementById('wa-modal-phone').value = found.phoneNo || '';
+      document.getElementById('wa-modal-message').value = buildWhatsAppReceiptMessage(found);
+      updateWhatsAppSetupBadge();
+      document.getElementById('whatsapp-modal')?.classList.remove('hidden');
+    }
+
+    function closeWhatsAppModal() {
+      document.getElementById('whatsapp-modal')?.classList.add('hidden');
+    }
+
+    function copyWhatsAppModalText() {
+      const msg = document.getElementById('wa-modal-message').value;
+      copyToClipboard(msg, 'WhatsApp receipt message copied!');
+    }
+
+    function launchWhatsAppFromModal() {
+      const phone = document.getElementById('wa-modal-phone').value.replace(/\D/g, '').slice(-10);
+      const msg = document.getElementById('wa-modal-message').value;
+      const base = phone ? `https://api.whatsapp.com/send?phone=91${phone}&text=${encodeURIComponent(msg)}` : `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+      const win = window.open(base, '_blank', 'noopener');
+      if (!win) {
+        showToast('Popup blocked — please allow popups or copy message.', 'error');
+      } else {
+        closeWhatsAppModal();
+      }
+    }
+
+    function openWhatsAppConfigModal() {
+      const cfg = getWhatsAppConfig();
+      selectWhatsAppMode(cfg.mode);
+      document.getElementById('wa-phone-id').value = cfg.phoneId;
+      document.getElementById('wa-access-token').value = cfg.accessToken;
+      document.getElementById('wa-template-name').value = cfg.templateName;
+      document.getElementById('wa-template-lang').value = cfg.templateLang || 'en_US';
+      document.getElementById('wa-webhook-url').value = cfg.webhookUrl;
+      document.getElementById('wa-webhook-token').value = cfg.webhookToken;
+      document.getElementById('wa-diagnostic-box')?.classList.add('hidden');
+      document.getElementById('whatsapp-config-modal')?.classList.remove('hidden');
+    }
+
+    function closeWhatsAppConfigModal() {
+      document.getElementById('whatsapp-config-modal')?.classList.add('hidden');
     }
 
     function selectWhatsAppMode(mode) {
@@ -2668,189 +2578,12 @@
             ? 'p-2.5 rounded-xl border text-left transition cursor-pointer bg-emerald-50 border-emerald-500 text-emerald-950'
             : 'p-2.5 rounded-xl border text-left transition cursor-pointer bg-white border-slate-200 text-slate-700 hover:bg-slate-50';
         }
-        if (panel) {
-          panel.classList.toggle('hidden', m !== mode);
-        }
+        if (panel) panel.classList.toggle('hidden', m !== mode);
       });
     }
 
-    function openWhatsAppConfigModal() {
-      const cfg = getWhatsAppConfig();
-      document.getElementById('wa-phone-id').value = cfg.phoneId || '';
-      document.getElementById('wa-access-token').value = cfg.accessToken || '';
-      document.getElementById('wa-template-name').value = cfg.templateName || '';
-      document.getElementById('wa-template-lang').value = cfg.templateLang || 'en_US';
-      document.getElementById('wa-webhook-url').value = cfg.webhookUrl || '';
-      document.getElementById('wa-webhook-token').value = cfg.webhookToken || '';
-      const diagBox = document.getElementById('wa-diagnostic-box');
-      if (diagBox) diagBox.classList.add('hidden');
-      selectWhatsAppMode(cfg.mode || 'deeplink');
-      document.getElementById('whatsapp-config-modal').classList.remove('hidden');
-    }
-
-    function closeWhatsAppConfigModal() {
-      document.getElementById('whatsapp-config-modal').classList.add('hidden');
-    }
-
     function saveWhatsAppConfig() {
-      const mode = document.getElementById('wa-delivery-mode').value || 'deeplink';
-      const phoneId = document.getElementById('wa-phone-id').value.trim();
-      const accessToken = document.getElementById('wa-access-token').value.trim();
-      const templateName = document.getElementById('wa-template-name').value.trim();
-      const templateLang = document.getElementById('wa-template-lang').value || 'en_US';
-      const webhookUrl = document.getElementById('wa-webhook-url').value.trim();
-      const webhookToken = document.getElementById('wa-webhook-token').value.trim();
-
-      if (mode === 'cloud_api' && (!phoneId || !accessToken)) {
-        showToast('Please enter Phone Number ID and Access Token for Meta Cloud API.', 'error');
-        return;
-      }
-      if (mode === 'webhook' && !webhookUrl) {
-        showToast('Please enter your Gateway Webhook URL.', 'error');
-        return;
-      }
-
-      localStorage.setItem(WA_CONFIG_KEY, JSON.stringify({
-        mode, phoneId, accessToken, templateName, templateLang, webhookUrl, webhookToken
-      }));
-      updateWhatsAppSetupBadge();
-      closeWhatsAppConfigModal();
-      showToast('WhatsApp delivery settings saved!');
-    }
-
-    function buildWhatsAppThankYouText(r) {
-      const rcptRef = r.receiptNo ? r.receiptNo : `#${r.serialNo}`;
-      const contribParts = [];
-      if (Number(r.amount) > 0) contribParts.push(formatINR(r.amount));
-      const matStr = formatMaterialsString(r.materials);
-      if (matStr) contribParts.push(matStr);
-      const contribText = contribParts.length > 0 ? ` of ${contribParts.join(' & ')}` : '';
-
-      return `Swamiye Saranam Ayyappa!\nDear ${r.donorName}, thank you for your kind contribution${contribText} to Sri Ayyappa Swami Seva Sangam.\nReceipt No: ${rcptRef}`;
-    }
-
-    function openWhatsAppChatWindow(phone10, msgText) {
-      const encoded = encodeURIComponent(msgText);
-      const targetPhone = phone10 && phone10.length === 10 ? `91${phone10}` : '';
-      const waUrl = targetPhone
-        ? `https://api.whatsapp.com/send?phone=${targetPhone}&text=${encoded}`
-        : `https://api.whatsapp.com/send?text=${encoded}`;
-
-      const popup = window.open(waUrl, '_blank', 'noopener,noreferrer');
-      if (!popup || popup.closed || typeof popup.closed === 'undefined') {
-        showWhatsAppPopupFallbackToast(waUrl, targetPhone);
-      } else {
-        showToast(targetPhone ? `Opened WhatsApp for +91 ${phone10}!` : 'Opened WhatsApp!');
-      }
-    }
-
-    function showWhatsAppPopupFallbackToast(waUrl, targetPhone) {
-      const container = document.getElementById('toast-container');
-      const el = document.createElement('div');
-      el.className = 'pointer-events-auto px-4 py-3 rounded-xl shadow-lg text-xs sm:text-sm font-medium bg-emerald-700 text-white flex items-center justify-between gap-3';
-      el.innerHTML = `
-        <span>Browser blocked auto-popup for ${targetPhone ? `+${targetPhone}` : 'WhatsApp'}.</span>
-        <a href="${waUrl}" target="_blank" rel="noopener noreferrer" onclick="this.parentElement.remove()"
-          class="px-3 py-1.5 rounded-lg bg-white text-emerald-900 font-bold text-xs shrink-0 shadow-xs hover:bg-emerald-50">
-          Open WhatsApp &#8599;
-        </a>
-      `;
-      container.appendChild(el);
-      setTimeout(() => {
-        if (el.parentElement) el.remove();
-      }, 10000);
-    }
-
-    async function sendWhatsAppMessagePayload(phone10, msgText, receiptObj = null, overrideCfg = null) {
-      const cfg = overrideCfg || getWhatsAppConfig();
-      const targetPhone = `91${phone10}`;
-
-      if (cfg.mode === 'cloud_api' && cfg.phoneId && cfg.accessToken) {
-        const cleanPhoneId = String(cfg.phoneId).trim();
-        const cleanToken = String(cfg.accessToken).trim();
-        const cleanTemplate = String(cfg.templateName || '').trim();
-        const cleanLang = String(cfg.templateLang || 'en_US').trim();
-
-        const payload = {
-          messaging_product: 'whatsapp',
-          recipient_type: 'individual',
-          to: targetPhone
-        };
-
-        if (cleanTemplate) {
-          payload.type = 'template';
-          payload.template = {
-            name: cleanTemplate,
-            language: { code: cleanLang }
-          };
-          if (cleanTemplate.toLowerCase() !== 'hello_world') {
-            const safeDonor = String(receiptObj?.donorName || 'Devotee').replace(/[\r\n\t]+/g, ' ').trim();
-            const safeRcpt = String(receiptObj?.receiptNo || receiptObj?.serialNo || '001').replace(/[\r\n\t]+/g, ' ').trim();
-            payload.template.components = [
-              {
-                type: 'body',
-                parameters: [
-                  { type: 'text', text: safeDonor },
-                  { type: 'text', text: safeRcpt }
-                ]
-              }
-            ];
-          }
-        } else {
-          payload.type = 'text';
-          payload.text = { preview_url: false, body: msgText };
-        }
-
-        const res = await fetch(`https://graph.facebook.com/v21.0/${cleanPhoneId}/messages`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${cleanToken}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(payload)
-        });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) {
-          const errObj = data.error || {};
-          const codeStr = errObj.code ? ` (Code ${errObj.code})` : '';
-          throw new Error(`${errObj.message || `HTTP ${res.status}`}${codeStr}`);
-        }
-        return data;
-      }
-
-      if (cfg.mode === 'webhook' && cfg.webhookUrl) {
-        const headers = { 'Content-Type': 'application/json' };
-        if (cfg.webhookToken) {
-          headers['Authorization'] = cfg.webhookToken.startsWith('Bearer ') ? cfg.webhookToken : `Bearer ${cfg.webhookToken}`;
-        }
-        const res = await fetch(cfg.webhookUrl.trim(), {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({
-            phone: targetPhone,
-            message: msgText,
-            receiptNo: receiptObj?.receiptNo || String(receiptObj?.serialNo || ''),
-            donorName: receiptObj?.donorName || ''
-          })
-        });
-        if (!res.ok) {
-          throw new Error(`Webhook HTTP ${res.status}`);
-        }
-        return await res.json().catch(() => ({ ok: true }));
-      }
-
-      openWhatsAppChatWindow(phone10, msgText);
-      return { openedApp: true };
-    }
-
-    async function sendTestWhatsAppMessage() {
-      const testPhone = document.getElementById('wa-test-phone').value.replace(/\D/g, '');
-      const diagBox = document.getElementById('wa-diagnostic-box');
-      if (testPhone.length !== 10) {
-        showToast('Enter a valid 10-digit mobile number to test.', 'error');
-        return;
-      }
-      const draftCfg = {
+      const cfg = {
         mode: document.getElementById('wa-delivery-mode').value || 'deeplink',
         phoneId: document.getElementById('wa-phone-id').value.trim(),
         accessToken: document.getElementById('wa-access-token').value.trim(),
@@ -2859,266 +2592,302 @@
         webhookUrl: document.getElementById('wa-webhook-url').value.trim(),
         webhookToken: document.getElementById('wa-webhook-token').value.trim()
       };
-      const testReceipt = { serialNo: 1, receiptNo: 'TEST-001', donorName: 'Devotee', amount: 500, materials: [] };
-      const msg = buildWhatsAppThankYouText(testReceipt);
-
-      if (diagBox) {
-        diagBox.className = 'p-2.5 rounded-lg font-mono text-[11px] leading-relaxed break-words bg-slate-100 text-slate-700 border border-slate-300';
-        diagBox.textContent = `Sending test to +91 ${testPhone} via ${draftCfg.mode}...`;
-        diagBox.classList.remove('hidden');
-      }
-
-      try {
-        const result = await sendWhatsAppMessagePayload(testPhone, msg, testReceipt, draftCfg);
-        if (diagBox) {
-          diagBox.className = 'p-2.5 rounded-lg font-mono text-[11px] leading-relaxed break-words bg-emerald-50 text-emerald-900 border border-emerald-300';
-          diagBox.textContent = result?.messages?.[0]?.id
-            ? `SUCCESS! Meta Message ID: ${result.messages[0].id}`
-            : `SUCCESS! Dispatched to +91 ${testPhone}.`;
-        }
-        showToast(`Test WhatsApp message sent to +91 ${testPhone}!`);
-      } catch (err) {
-        let hint = '';
-        if (err.message.includes('131030')) {
-          hint = ' -> Add +91 ' + testPhone + ' to "Manage phone number list" in Meta WhatsApp API Setup.';
-        } else if (err.message.includes('190')) {
-          hint = ' -> Your 24-hour Meta Access Token has expired. Generate a fresh token in Meta API Setup.';
-        } else if (err.message.includes('132001')) {
-          hint = ' -> Template name or language does not match Meta Manager. Try "hello_world" with "en_US".';
-        }
-        if (diagBox) {
-          diagBox.className = 'p-2.5 rounded-lg font-mono text-[11px] leading-relaxed break-words bg-red-50 text-red-800 border border-red-300';
-          diagBox.textContent = `API ERROR: ${err.message}${hint}`;
-        }
-        showToast(`Test failed: ${err.message}`, 'error');
-      }
+      localStorage.setItem(WA_CONFIG_KEY, JSON.stringify(cfg));
+      updateWhatsAppSetupBadge();
+      closeWhatsAppConfigModal();
+      showToast('WhatsApp configuration saved.');
     }
 
-    async function triggerDirectWhatsAppSend(r) {
-      const phone = (r.phoneNo || '').replace(/\D/g, '');
-      const msg = buildWhatsAppThankYouText(r);
+    async function sendWhatsAppPayload(phone10, messageText, metaParams = null) {
       const cfg = getWhatsAppConfig();
+      const cleanPhone = String(phone10 || '').replace(/\D/g, '').slice(-10);
+      if (cleanPhone.length !== 10) {
+        throw new Error('Valid 10-digit recipient mobile number is required.');
+      }
 
-      if (phone.length === 10) {
-        try {
-          if (cfg.mode === 'cloud_api' && cfg.phoneId && cfg.accessToken) {
-            await sendWhatsAppMessagePayload(phone, msg, r, cfg);
-            showToast(`WhatsApp thank-you sent via Cloud API to +91 ${phone}!`);
-          } else if (cfg.mode === 'webhook' && cfg.webhookUrl) {
-            await sendWhatsAppMessagePayload(phone, msg, r, cfg);
-            showToast(`WhatsApp thank-you sent via Gateway to +91 ${phone}!`);
-          } else {
-            openWhatsAppChatWindow(phone, msg);
-          }
-        } catch (err) {
-          showToast(`API failed (${err.message}). Opening WhatsApp chat...`, 'error');
-          openWhatsAppChatWindow(phone, msg);
+      if (cfg.mode === 'cloud_api') {
+        if (!cfg.phoneId || !cfg.accessToken) {
+          throw new Error('Missing Meta Phone Number ID or Access Token.');
         }
-      } else {
-        openWhatsAppShareModal(r);
+        const bodyPayload = cfg.templateName
+          ? {
+              messaging_product: 'whatsapp',
+              to: `91${cleanPhone}`,
+              type: 'template',
+              template: {
+                name: cfg.templateName,
+                language: { code: cfg.templateLang || 'en_US' },
+                ...(cfg.templateName !== 'hello_world' && metaParams
+                  ? {
+                      components: [{
+                        type: 'body',
+                        parameters: [
+                          { type: 'text', text: String(metaParams.donorName || 'Devotee').replace(/\s+/g, ' ') },
+                          { type: 'text', text: String(metaParams.receiptNo || '2026').replace(/\s+/g, ' ') }
+                        ]
+                      }]
+                    }
+                  : {})
+              }
+            }
+          : {
+              messaging_product: 'whatsapp',
+              to: `91${cleanPhone}`,
+              type: 'text',
+              text: { body: messageText }
+            };
+
+        const res = await fetch(`https://graph.facebook.com/v21.0/${cfg.phoneId}/messages`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${cfg.accessToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(bodyPayload)
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(`Meta API (${data.error?.code || res.status}): ${data.error?.message || 'Send failed'}`);
+        }
+        return data;
       }
-    }
 
-    function shareReceiptWhatsApp(serialNo) {
-      const target = receipts.find(r => r.serialNo === serialNo);
-      if (!target) return;
-      triggerDirectWhatsAppSend(target);
-    }
-
-    function openWhatsAppShareModal(r) {
-      currentWhatsAppReceipt = r;
-      const cfg = getWhatsAppConfig();
-      const cloudBtn = document.getElementById('wa-cloud-send-btn');
-      if (cloudBtn) {
-        const hasApi = (cfg.mode === 'cloud_api' && cfg.phoneId && cfg.accessToken) || (cfg.mode === 'webhook' && cfg.webhookUrl);
-        cloudBtn.classList.toggle('hidden', !hasApi);
+      if (cfg.mode === 'webhook') {
+        if (!cfg.webhookUrl) throw new Error('Webhook URL is not configured.');
+        const res = await fetch(cfg.webhookUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(cfg.webhookToken ? { Authorization: `Bearer ${cfg.webhookToken}` } : {})
+          },
+          body: JSON.stringify({
+            phone: `91${cleanPhone}`,
+            message: messageText,
+            donorName: metaParams?.donorName || '',
+            receiptNo: metaParams?.receiptNo || ''
+          })
+        });
+        if (!res.ok) throw new Error(`Webhook HTTP ${res.status}`);
+        return { ok: true };
       }
-      document.getElementById('wa-modal-phone').value = (r.phoneNo || '').replace(/\D/g, '').slice(0, 10);
-      document.getElementById('wa-modal-message').value = buildWhatsAppThankYouText(r);
-      document.getElementById('whatsapp-modal').classList.remove('hidden');
-    }
 
-    function closeWhatsAppModal() {
-      currentWhatsAppReceipt = null;
-      document.getElementById('whatsapp-modal').classList.add('hidden');
-    }
-
-    function copyWhatsAppModalText() {
-      const msg = document.getElementById('wa-modal-message').value;
-      copyToClipboard(msg, 'WhatsApp thank-you message copied!');
+      const url = `https://api.whatsapp.com/send?phone=91${cleanPhone}&text=${encodeURIComponent(messageText)}`;
+      window.open(url, '_blank', 'noopener');
+      return { opened: true };
     }
 
     async function sendViaCloudAPI() {
-      const phone = document.getElementById('wa-modal-phone').value.replace(/\D/g, '');
-      const msg = document.getElementById('wa-modal-message').value.trim();
+      const phone = document.getElementById('wa-modal-phone').value;
+      const msg = document.getElementById('wa-modal-message').value;
+      try {
+        await sendWhatsAppPayload(phone, msg);
+        closeWhatsAppModal();
+        showToast('WhatsApp message sent via API!');
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
 
-      if (phone.length !== 10) {
-        showToast('Enter a valid 10-digit mobile number for API send.', 'error');
+    async function sendTestWhatsAppMessage() {
+      const testPhone = document.getElementById('wa-test-phone').value;
+      const diagBox = document.getElementById('wa-diagnostic-box');
+      try {
+        const res = await sendWhatsAppPayload(
+          testPhone,
+          'Swamiye Saranam Ayyappa! Test receipt message from Sri Ayyappa Swami Seva Sangam — Receipts 2026.',
+          { donorName: 'Devotee', receiptNo: 'TEST-001' }
+        );
+        if (diagBox) {
+          diagBox.className = 'p-2.5 rounded-lg font-mono text-[11px] leading-relaxed break-words bg-emerald-50 border border-emerald-200 text-emerald-900';
+          diagBox.textContent = `Success: ${JSON.stringify(res)}`;
+          diagBox.classList.remove('hidden');
+        }
+        showToast('Test WhatsApp message triggered!');
+      } catch (err) {
+        if (diagBox) {
+          diagBox.className = 'p-2.5 rounded-lg font-mono text-[11px] leading-relaxed break-words bg-red-50 border border-red-200 text-red-800';
+          diagBox.textContent = err.message;
+          diagBox.classList.remove('hidden');
+        }
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function triggerAutoWhatsAppForReceipt(receipt) {
+      if (!receipt.phoneNo || receipt.phoneNo.length !== 10) return;
+      const msg = buildWhatsAppReceiptMessage(receipt);
+      try {
+        await sendWhatsAppPayload(receipt.phoneNo, msg, {
+          donorName: receipt.donorName,
+          receiptNo: receipt.receiptNo || `#${receipt.serialNo}`
+        });
+      } catch (err) {
+        showToast(`WhatsApp auto-send: ${err.message}`, 'error');
+      }
+    }
+
+    // =========================================================================
+    // 8B. ALL RECEIPTS TAB (FULL REGISTER WITH SEARCH & MULTI-FILTERS)
+    // =========================================================================
+    function populateAllReceiptsFilters() {
+      const careoffSel = document.getElementById('all-rcpt-filter-careoff');
+      const bookSel = document.getElementById('all-rcpt-filter-book');
+      const dateSel = document.getElementById('all-rcpt-filter-date');
+      if (!careoffSel || !bookSel || !dateSel) return;
+
+      const prevCareoff = careoffSel.value || 'ALL';
+      const prevBook = bookSel.value || 'ALL';
+      const prevDate = dateSel.value || 'ALL';
+
+      const activeCareoffs = [...new Set(receipts.map(r => (r.careOf || '').trim() || 'Direct / Unassigned'))].sort();
+      careoffSel.innerHTML = '<option value="ALL">All Careoffs</option>' +
+        activeCareoffs.map(c => `<option value="${escapeHTML(c)}">${escapeHTML(c)}</option>`).join('');
+      if ([...careoffSel.options].some(o => o.value === prevCareoff)) {
+        careoffSel.value = prevCareoff;
+      }
+
+      bookSel.innerHTML = '<option value="ALL">All 20 Books (001-1000)</option>' +
+        RECEIPT_BOOKS.map(b => `<option value="${b.bookNo}">${b.label}</option>`).join('') +
+        '<option value="UNASSIGNED">Unnumbered / Online Ref</option>';
+      if ([...bookSel.options].some(o => o.value === prevBook)) {
+        bookSel.value = prevBook;
+      }
+
+      const activeDates = [...new Set(receipts.map(r => r.date).filter(Boolean))].sort().reverse();
+      dateSel.innerHTML = '<option value="ALL">All Dates</option>' +
+        activeDates.map(d => `<option value="${escapeHTML(d)}">${toDisplayDate(d)}</option>`).join('');
+      if ([...dateSel.options].some(o => o.value === prevDate)) {
+        dateSel.value = prevDate;
+      }
+    }
+
+    function getFilteredAllReceipts() {
+      const allWithBal = getReceiptsWithRunningBalance();
+      const query = (document.getElementById('all-rcpt-search')?.value || '').trim().toLowerCase();
+      const modeVal = document.getElementById('all-rcpt-filter-mode')?.value || 'ALL';
+      const careoffVal = document.getElementById('all-rcpt-filter-careoff')?.value || 'ALL';
+      const bookVal = document.getElementById('all-rcpt-filter-book')?.value || 'ALL';
+      const dateVal = document.getElementById('all-rcpt-filter-date')?.value || 'ALL';
+
+      return allWithBal.filter(r => {
+        if (modeVal !== 'ALL' && r.mode !== modeVal) return false;
+        const cName = (r.careOf || '').trim() || 'Direct / Unassigned';
+        if (careoffVal !== 'ALL' && cName !== careoffVal) return false;
+
+        if (bookVal !== 'ALL') {
+          const bNo = getReceiptBookNumber(r.receiptNo);
+          if (bookVal === 'UNASSIGNED') {
+            if (bNo !== null) return false;
+          } else if (String(bNo) !== String(bookVal)) {
+            return false;
+          }
+        }
+
+        if (dateVal !== 'ALL' && r.date !== dateVal) return false;
+
+        if (query) {
+          const matStr = formatMaterialsString(r.materials);
+          const hay = `${r.serialNo} ${r.receiptNo} ${r.donorName} ${r.careOf} ${r.address} ${r.reference} ${r.phoneNo} ${r.mode} ${matStr}`.toLowerCase();
+          if (!hay.includes(query)) return false;
+        }
+        return true;
+      });
+    }
+
+    function resetAllReceiptsFilters() {
+      const s = document.getElementById('all-rcpt-search');
+      const m = document.getElementById('all-rcpt-filter-mode');
+      const c = document.getElementById('all-rcpt-filter-careoff');
+      const b = document.getElementById('all-rcpt-filter-book');
+      const d = document.getElementById('all-rcpt-filter-date');
+      if (s) s.value = '';
+      if (m) m.value = 'ALL';
+      if (c) c.value = 'ALL';
+      if (b) b.value = 'ALL';
+      if (d) d.value = 'ALL';
+      renderAllReceiptsTab();
+    }
+
+    function copyFilteredReceiptsTSV() {
+      const filtered = getFilteredAllReceipts();
+      const tsv = filtered.map(r => buildSheetRowFromReceipt(r, r.runningBalance, gsColumnMap).join('\t')).join('\n');
+      copyToClipboard(tsv, `Copied ${filtered.length} filtered receipts (TSV)!`);
+    }
+
+    function renderAllReceiptsTab() {
+      populateAllReceiptsFilters();
+      const navCount = document.getElementById('nav-all-receipts-count');
+      if (navCount) navCount.textContent = receipts.length;
+
+      const query = (document.getElementById('all-rcpt-search')?.value || '').trim();
+      const modeVal = document.getElementById('all-rcpt-filter-mode')?.value || 'ALL';
+      const careoffVal = document.getElementById('all-rcpt-filter-careoff')?.value || 'ALL';
+      const bookVal = document.getElementById('all-rcpt-filter-book')?.value || 'ALL';
+      const dateVal = document.getElementById('all-rcpt-filter-date')?.value || 'ALL';
+      const isFiltered = Boolean(query) || modeVal !== 'ALL' || careoffVal !== 'ALL' || bookVal !== 'ALL' || dateVal !== 'ALL';
+
+      const resetBtn = document.getElementById('all-rcpt-reset-btn');
+      if (resetBtn) resetBtn.classList.toggle('hidden', !isFiltered);
+
+      const filtered = getFilteredAllReceipts();
+      const filteredTotal = filtered.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+
+      const countBadge = document.getElementById('all-rcpt-count-badge');
+      const totalBadge = document.getElementById('all-rcpt-total-badge');
+      if (countBadge) countBadge.textContent = `Showing ${filtered.length} of ${receipts.length}`;
+      if (totalBadge) totalBadge.textContent = `Filtered Total: ${formatINR(filteredTotal)}`;
+
+      const tbody = document.getElementById('all-receipts-table-body');
+      const tfoot = document.getElementById('all-receipts-table-foot');
+      if (!tbody || !tfoot) return;
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="13" class="py-10 text-center text-xs sm:text-sm text-slate-500">No receipts match your active filters.</td></tr>`;
+        tfoot.innerHTML = '';
         return;
       }
 
-      try {
-        await sendWhatsAppMessagePayload(phone, msg, currentWhatsAppReceipt);
-        closeWhatsAppModal();
-        showToast(`WhatsApp thank-you sent directly to +91 ${phone}!`);
-      } catch (err) {
-        showToast(`API Send failed: ${err.message}`, 'error');
-      }
-    }
+      const ordered = [...filtered].reverse();
+      tbody.innerHTML = ordered.map(r => `
+        <tr class="hover:bg-slate-50 transition">
+          <td class="py-2.5 px-3 font-mono text-xs text-slate-500 tabular-nums">${r.serialNo}</td>
+          <td class="py-2.5 px-3 font-mono text-xs text-slate-700 tabular-nums">${escapeHTML(r.receiptNo || '—')}</td>
+          <td class="py-2.5 px-3 font-mono text-xs text-slate-600 whitespace-nowrap tabular-nums">${toDisplayDate(r.date)}</td>
+          <td class="py-2.5 px-3 font-semibold text-slatex-900">${escapeHTML(r.donorName)}</td>
+          <td class="py-2.5 px-3 text-slate-600">${escapeHTML(r.careOf || '—')}</td>
+          <td class="py-2.5 px-3 text-xs text-slate-600 max-w-[160px] truncate" title="${escapeHTML(r.address || '')}">${escapeHTML(r.address || '—')}</td>
+          <td class="py-2.5 px-3 text-xs text-slate-600 max-w-[140px] truncate" title="${escapeHTML(r.reference || '')}">${escapeHTML(r.reference || '—')}</td>
+          <td class="py-2.5 px-3 font-mono text-xs text-slate-600 tabular-nums">${escapeHTML(r.phoneNo || '—')}</td>
+          <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded-full text-[11px] font-semibold border ${getModeBadgeClasses(r.mode)}">${escapeHTML(r.mode)}</span></td>
+          <td class="py-2.5 px-3 text-right font-semibold text-slatex-900 tabular-nums">${Number(r.amount) > 0 ? formatINR(r.amount) : '—'}</td>
+          <td class="py-2.5 px-3 text-xs text-slate-700">${escapeHTML(formatMaterialsString(r.materials) || '—')}</td>
+          <td class="py-2.5 px-3 text-right font-mono text-xs font-semibold text-emerald-700 tabular-nums">${formatINR(r.runningBalance)}</td>
+          <td class="py-2.5 px-3 text-right whitespace-nowrap">
+            <div class="inline-flex items-center gap-1">
+              <button type="button" onclick="shareReceiptWhatsApp(${r.serialNo})"
+                class="px-2 py-1 rounded-md text-[11px] font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 transition cursor-pointer">
+                WA
+              </button>
+              <button type="button" onclick="editReceiptRow(${r.serialNo})"
+                class="px-2 py-1 rounded-md text-[11px] font-semibold text-brand-700 bg-brand-50 hover:bg-brand-100 border border-brand-200/80 transition cursor-pointer">
+                Edit
+              </button>
+              <button type="button" onclick="promptDeleteReceipt(${r.serialNo})"
+                class="px-2 py-1 rounded-md text-[11px] font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200/80 transition cursor-pointer">
+                Delete
+              </button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
 
-    function launchWhatsAppFromModal() {
-      const rawPhone = document.getElementById('wa-modal-phone').value.replace(/\D/g, '');
-      const msg = document.getElementById('wa-modal-message').value.trim();
-      closeWhatsAppModal();
-      openWhatsAppChatWindow(rawPhone, msg);
-    }
-
-    // =========================================================================
-    // 8. REGISTER RENDERING (FEED + SPREADSHEET TABLE)
-    // =========================================================================
-    function setRegisterDisplayMode(mode) {
-      registerDisplayMode = mode;
-      const feedBtn = document.getElementById('view-toggle-feed');
-      const tableBtn = document.getElementById('view-toggle-table');
-      const feedContainer = document.getElementById('register-feed-container');
-      const tableContainer = document.getElementById('register-table-container');
-
-      if (mode === 'feed') {
-        feedBtn.className = 'min-h-[32px] px-2.5 py-1 rounded-md text-xs font-semibold bg-white text-slatex-900 shadow-2xs cursor-pointer';
-        tableBtn.className = 'min-h-[32px] px-2.5 py-1 rounded-md text-xs font-semibold text-slate-600 hover:text-slatex-900 cursor-pointer';
-        feedContainer.classList.remove('hidden');
-        tableContainer.classList.add('hidden');
-      } else {
-        tableBtn.className = 'min-h-[32px] px-2.5 py-1 rounded-md text-xs font-semibold bg-white text-slatex-900 shadow-2xs cursor-pointer';
-        feedBtn.className = 'min-h-[32px] px-2.5 py-1 rounded-md text-xs font-semibold text-slate-600 hover:text-slatex-900 cursor-pointer';
-        tableContainer.classList.remove('hidden');
-        feedContainer.classList.add('hidden');
-      }
-    }
-
-    function setRecentLimit(limit) {
-      recentLimit = limit;
-      [5, 10, 15].forEach(n => {
-        const btn = document.getElementById(`limit-btn-${n}`);
-        if (!btn) return;
-        if (n === limit) {
-          btn.className = 'min-h-[32px] px-2.5 py-1 rounded-md font-semibold bg-white text-slatex-900 shadow-2xs cursor-pointer';
-        } else {
-          btn.className = 'min-h-[32px] px-2.5 py-1 rounded-md font-semibold text-slate-600 hover:text-slatex-900 cursor-pointer';
-        }
-      });
-      renderReceiptsRegister();
-    }
-
-    function renderReceiptsRegister() {
-      const allWithBal = getReceiptsWithRunningBalance();
-      const recentSlice = [...allWithBal].reverse().slice(0, recentLimit);
-
-      const badgeEl = document.getElementById('register-Showing-badge');
-      if (badgeEl) {
-        badgeEl.textContent = `Last ${recentSlice.length} of ${allWithBal.length}`;
-      }
-
-      const feedContainer = document.getElementById('register-feed-container');
-      if (feedContainer) {
-        if (recentSlice.length === 0) {
-          feedContainer.innerHTML = `<div class="p-8 text-center text-sm text-slate-500">No receipts logged yet.</div>`;
-        } else {
-          feedContainer.innerHTML = recentSlice.map(r => {
-            const matStr = formatMaterialsString(r.materials);
-            const subParts = [
-              r.receiptNo ? `Receipt #${escapeHTML(r.receiptNo)}` : null,
-              r.careOf ? `C/o ${escapeHTML(r.careOf)}` : null,
-              r.address ? escapeHTML(r.address) : null,
-              r.reference ? `Ref: ${escapeHTML(r.reference)}` : null,
-              r.phoneNo ? escapeHTML(r.phoneNo) : null
-            ].filter(Boolean);
-
-            return `
-              <div class="p-3.5 sm:p-4 hover:bg-slate-50/80 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div class="space-y-1 min-w-0 flex-1">
-                  <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                    <span class="font-mono text-xs font-semibold text-slate-400 tabular-nums">#${r.serialNo}</span>
-                    <span class="font-semibold text-sm text-slatex-900 truncate">${escapeHTML(r.donorName)}</span>
-                    <span class="px-2 py-0.5 rounded-full text-[11px] font-semibold border ${getModeBadgeClasses(r.mode)}">${escapeHTML(r.mode)}</span>
-                  </div>
-                  <p class="text-xs text-slate-500 tabular-nums break-words">
-                    ${toDisplayDate(r.date)}${subParts.length ? ' &middot; ' + subParts.join(' &middot; ') : ''}
-                  </p>
-                  ${matStr ? `<p class="text-xs font-medium text-amber-800 bg-amber-50/80 border border-amber-200/70 rounded-md px-2 py-1 inline-block mt-1 break-words">${escapeHTML(matStr)}</p>` : ''}
-                </div>
-
-                <div class="flex sm:flex-col items-center sm:items-end justify-between gap-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
-                  <div class="text-left sm:text-right">
-                    <p class="font-display font-bold text-sm sm:text-base text-slatex-900 tabular-nums">
-                      ${Number(r.amount) > 0 ? formatINR(r.amount) : '<span class="text-xs font-semibold text-amber-700">In-Kind</span>'}
-                    </p>
-                    <p class="text-[11px] font-mono text-slate-400 tabular-nums">Bal: ${formatINR(r.runningBalance)}</p>
-                  </div>
-                  <div class="flex items-center gap-1.5">
-                    <button type="button" onclick="shareReceiptWhatsApp(${r.serialNo})"
-                      class="min-h-[32px] px-2.5 py-1 rounded-lg text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 shadow-2xs transition cursor-pointer">
-                      WhatsApp
-                    </button>
-                    <button type="button" onclick="editReceiptRow(${r.serialNo})"
-                      class="min-h-[32px] px-2.5 py-1 rounded-lg text-xs font-semibold text-brand-700 bg-brand-50/80 hover:bg-brand-100 border border-brand-200/80 shadow-2xs inline-flex items-center gap-1 transition cursor-pointer"
-                      title="Edit Receipt">
-                      <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" />
-                      </svg>
-                      <span>Edit</span>
-                    </button>
-                    <button type="button" onclick="promptDeleteReceipt(${r.serialNo})"
-                      class="min-h-[32px] px-2.5 py-1 rounded-lg text-xs font-semibold text-rose-700 bg-rose-50/80 hover:bg-rose-100 border border-rose-200/80 shadow-2xs inline-flex items-center gap-1 transition cursor-pointer"
-                      title="Delete Receipt">
-                      <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                      </svg>
-                      <span>Delete</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            `;
-          }).join('');
-        }
-      }
-
-      const tableBody = document.getElementById('register-table-body');
-      if (tableBody) {
-        tableBody.innerHTML = recentSlice.map(r => `
-          <tr class="hover:bg-slate-50 transition">
-            <td class="py-2.5 px-3 font-mono text-xs text-slate-500 tabular-nums">${r.serialNo}</td>
-            <td class="py-2.5 px-3 font-mono text-xs text-slate-700 tabular-nums">${escapeHTML(r.receiptNo || '—')}</td>
-            <td class="py-2.5 px-3 font-mono text-xs text-slate-600 whitespace-nowrap tabular-nums">${toDisplayDate(r.date)}</td>
-            <td class="py-2.5 px-3 font-semibold text-slatex-900">${escapeHTML(r.donorName)}</td>
-            <td class="py-2.5 px-3 text-slate-600">${escapeHTML(r.careOf || '—')}</td>
-            <td class="py-2.5 px-3 text-xs text-slate-600 max-w-[160px] truncate" title="${escapeHTML(r.address || '')}">${escapeHTML(r.address || '—')}</td>
-            <td class="py-2.5 px-3 text-xs text-slate-600 max-w-[140px] truncate" title="${escapeHTML(r.reference || '')}">${escapeHTML(r.reference || '—')}</td>
-            <td class="py-2.5 px-3 font-mono text-xs text-slate-600 tabular-nums">${escapeHTML(r.phoneNo || '—')}</td>
-            <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded-full text-[11px] font-semibold border ${getModeBadgeClasses(r.mode)}">${escapeHTML(r.mode)}</span></td>
-            <td class="py-2.5 px-3 text-right font-semibold text-slatex-900 tabular-nums">${Number(r.amount) > 0 ? formatINR(r.amount) : '—'}</td>
-            <td class="py-2.5 px-3 text-xs text-slate-700">${escapeHTML(formatMaterialsString(r.materials) || '—')}</td>
-            <td class="py-2.5 px-3 text-right font-mono text-xs font-semibold text-emerald-700 tabular-nums">${formatINR(r.runningBalance)}</td>
-            <td class="py-2.5 px-3 text-right whitespace-nowrap">
-              <div class="inline-flex items-center gap-1">
-                <button type="button" onclick="shareReceiptWhatsApp(${r.serialNo})"
-                  class="px-2 py-1 rounded-md text-[11px] font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 transition cursor-pointer">
-                  WA
-                </button>
-                <button type="button" onclick="editReceiptRow(${r.serialNo})"
-                  class="px-2 py-1 rounded-md text-[11px] font-semibold text-brand-700 bg-brand-50 hover:bg-brand-100 border border-brand-200/80 transition cursor-pointer">
-                  Edit
-                </button>
-                <button type="button" onclick="promptDeleteReceipt(${r.serialNo})"
-                  class="px-2 py-1 rounded-md text-[11px] font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200/80 transition cursor-pointer">
-                  Delete
-                </button>
-              </div>
-            </td>
-          </tr>
-        `).join('');
-      }
+      tfoot.innerHTML = `
+        <tr>
+          <td colspan="9" class="py-2.5 px-3 text-xs uppercase">Filtered Receipts Total (${filtered.length} rows)</td>
+          <td class="py-2.5 px-3 text-right font-bold text-slatex-900 tabular-nums">${formatINR(filteredTotal)}</td>
+          <td colspan="3" class="py-2.5 px-3 text-xs text-slate-400"></td>
+        </tr>
+      `;
     }
 
     // =========================================================================
@@ -4234,7 +4003,7 @@
     // =========================================================================
     function switchTab(tabName) {
       activeTab = tabName;
-      ['receipts', 'dashboard', 'requirements', 'export'].forEach(t => {
+      ['receipts', 'all-receipts', 'dashboard', 'requirements', 'export'].forEach(t => {
         const viewEl = document.getElementById(`view-${t}`);
         if (viewEl) {
           viewEl.classList.toggle('hidden', t !== tabName);
@@ -4249,11 +4018,12 @@
             : 'nav-tab min-h-[38px] px-3.5 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap transition cursor-pointer text-slate-200 hover:text-white hover:bg-white/10';
         } else {
           btn.className = isMatch
-            ? 'nav-tab min-h-[42px] flex flex-col items-center justify-center py-1 rounded-lg bg-brand-50 text-brand-800 font-semibold text-[11px] cursor-pointer'
-            : 'nav-tab min-h-[42px] flex flex-col items-center justify-center py-1 rounded-lg text-slate-500 font-medium text-[11px] cursor-pointer';
+            ? 'nav-tab min-h-[42px] flex flex-col items-center justify-center py-1 rounded-lg bg-brand-50 text-brand-800 font-semibold text-[10px] cursor-pointer'
+            : 'nav-tab min-h-[42px] flex flex-col items-center justify-center py-1 rounded-lg text-slate-500 font-medium text-[10px] cursor-pointer';
         }
       });
 
+      if (tabName === 'all-receipts') renderAllReceiptsTab();
       if (tabName === 'dashboard') renderDashboardView();
       if (tabName === 'requirements') renderRequirementsTable();
       if (tabName === 'export') {
@@ -4280,6 +4050,7 @@
       populateMaterialDropdown();
       populateDonorDatalist();
       renderReceiptsRegister();
+      renderAllReceiptsTab();
       renderDashboardView();
       renderRequirementsTable();
       updateTSVPreview();
@@ -4316,6 +4087,9 @@
       removeDraftMaterial,
       setRecentLimit,
       setRegisterDisplayMode,
+      renderAllReceiptsTab,
+      resetAllReceiptsFilters,
+      copyFilteredReceiptsTSV,
       renderDashboardView,
       resetDashboardFilters,
       filterDashboardByCareoff,
